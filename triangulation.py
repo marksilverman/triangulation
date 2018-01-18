@@ -11,24 +11,22 @@ hw = w // 2
 hh = h // 2
 vertical_gap = 0
 left_gap = 10;
-right_gap =0;
+right_gap = 0;
 
-_down = 0
-_up = 1
-_left = 2
-_right = 3
+UP = 0
+DOWN = 1
+LEFT = 2
+RIGHT = 3
 
-_unfilled = 0
-_filled = 1
-_frozen = 2
-# _next_id = 0
+UNFILLED = 0
+FILLED = 1
+FROZEN = 2
 
 class triangle():
     next_id = 0
     def __init__(self):
-        global _next_id, _unfilled
         self.parent = self.child = self.left = self.right = None
-        self.state = _unfilled
+        self.state = UNFILLED
         self.id = triangle.next_id
         self.selected = 0
         triangle.next_id += 1
@@ -116,7 +114,6 @@ class triangulation(Frame):
         self.quit_button.pack({"side": "left"})
 
         self.canvas = Canvas(self.master, width=w, height=h, bg='white')
-
         self.canvas.pack({"side": "left"})
 
     def __init__(self, master):
@@ -126,7 +123,6 @@ class triangulation(Frame):
         master.bind("<Key>", self.key)
 
     def new(self):
-        global _up, _down
         self.hide = False
         self.cursor = self.top = new_node = parent_node = triangle()
         for row_idx in range(1, self.rows):
@@ -135,9 +131,9 @@ class triangulation(Frame):
             for node_idx in range(0, node_cnt):
                 new_node = triangle()
                 if (node_idx % 2):
-                    new_node.dir = _down
+                    new_node.dir = DOWN
                 else:
-                    new_node.dir = _up
+                    new_node.dir = UP
                 if (node_idx == 0):
                     start_of_current_row = new_node
                 if (prev_node):
@@ -153,22 +149,39 @@ class triangulation(Frame):
         self.draw()
     
     def add(self):
-        global _unfilled, _filled, _frozen
         node = self.top
         node = node.child.child
-        node.state = _filled
+        node.state = FILLED
         node = node.child
-        node.state = _filled
-        node.left.state = _filled
-        node.right.state = _filled
+        node.state = FILLED
+        node.left.state = FILLED
+        node.right.state = FILLED
 
+    def clear(self):
+        node = self.top
+        dir = RIGHT
+        while(node):
+            node.state = UNFILLED
+            if (dir == RIGHT):
+               if (node.right):
+                    node = node.right
+               else:
+                    node = node.child
+                    if (node): node = node.right
+                    dir = LEFT
+            elif (dir == LEFT):
+                if (node.left):
+                    node = node.left
+                else:
+                    node = node.child
+                    if (node): node = node.left
+                    dir = RIGHT
     def draw(self):
-        global hw, length, half_length, altitude, vertical_gap, _unfilled, _filled, _frozen, _up, _down, _left, _right
         self.canvas.delete("all")
         node = self.top
         for row_idx in range(0, self.rows):
             start_of_row = node
-            dir = _up
+            dir = UP
             node_idx = 0
             cnt = 0
             while (node):
@@ -179,12 +192,12 @@ class triangulation(Frame):
                 x3 = x1 + half_length
                 y3 = y1 - altitude
 
-                if (node.state == _filled):
+                if (node.state == FILLED):
                     color = "darkgray"
                     cnt += 1
-                elif (node.state == _unfilled):
+                elif (node.state == UNFILLED):
                     color = "white"
-                elif (node.state == _frozen):
+                elif (node.state == FROZEN):
                     color = "pink"
 
                 if (node == self.cursor):
@@ -192,12 +205,12 @@ class triangulation(Frame):
                 if (self.hide == True):
                     color = "white"
 
-                if (dir == _up):
+                if (dir == UP):
                     self.canvas.create_polygon(x1, y1, x2, y2, x3, y3, x1, y1, outline="black", fill=color, width=3)
-                    dir = _down
+                    dir = DOWN
                 else:
                     self.canvas.create_polygon(x1, y3, x2, y3, x3, y1, x1, y3, outline="black", fill=color, width=3)
-                    dir = _up
+                    dir = UP
                 node = node.right
                 node_idx += 1
             
@@ -212,17 +225,17 @@ class triangulation(Frame):
         node = self.top
         for row_idx in range(0, self.rows):
             cnt = 0
-            dir = _down
+            dir = DOWN
             start_of_row = node
             while (node):
-                if (node.state == _filled):
+                if (node.state == FILLED):
                     cnt += 1
-                if (dir == _down):
+                if (dir == DOWN):
                     node = node.child
-                    dir = _left
+                    dir = LEFT
                 else:
                     node = node.left
-                    dir = _down
+                    dir = DOWN
             self.canvas.create_text(hw - .75 * length + (half_length * (row_idx + 1)),
                                     (row_idx + 2) * (altitude + vertical_gap) - (altitude/2),
                                     text=cnt, font="12x24")
@@ -234,17 +247,17 @@ class triangulation(Frame):
         node = self.top
         for row_idx in range(0, self.rows):
             cnt = 0
-            dir = _down
+            dir = DOWN
             start_of_row = node
             while (node):
-                if (node.state == _filled):
+                if (node.state == FILLED):
                     cnt += 1
-                if (dir == _down):
+                if (dir == DOWN):
                     node = node.child
-                    dir = _right
+                    dir = RIGHT
                 else:
                     node = node.right
-                    dir = _down
+                    dir = DOWN
             self.canvas.create_text(hw - half_length + self.rows * length / 2.0 - (length * (row_idx + 1)),
                                     (self.rows + 2) * (altitude + vertical_gap) - (altitude/2),
                                     text=cnt, font="12x24")
