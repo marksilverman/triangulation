@@ -29,6 +29,7 @@ class triangle():
         self.state = UNFILLED
         self.id = triangle.next_id
         self.selected = 0
+        self.dir = UP
         triangle.next_id += 1
 
 class triangulation(Frame):
@@ -39,6 +40,7 @@ class triangulation(Frame):
         if (k == "'a'"): self.add()
         if (k == "'o'"): self.open()
         if (k == "'c'"): self.clear()
+        if (k == "'i'"): self.insert()
         if (k == "'h'"):
            if (self.hide == True): self.hide = False
            else: self.hide = True
@@ -48,19 +50,19 @@ class triangulation(Frame):
             if (self.cursor.left):
                 self.cursor = self.cursor.left
             elif (self.cursor.child):
-                self.cursor = self.cursor.child.left
+                self.cursor = self.cursor.child
         if (k == "'Right'"):
             if (self.cursor.right):
                 self.cursor = self.cursor.right
             elif (self.cursor.child):
-                self.cursor = self.cursor.child.right
+                self.cursor = self.cursor.child
         if (k == "'Up'"):
             if (self.cursor.parent):
                 self.cursor = self.cursor.parent
             elif (self.cursor.right and self.cursor.right.parent):
-                self.cursor = self.cursor.right.parent
+                self.cursor = self.cursor.right
             elif (self.cursor.left and self.cursor.left.parent):
-                self.cursor = self.cursor.left.parent
+                self.cursor = self.cursor.left
         if (k == "'Down'"):
             if (self.cursor.child):
                 self.cursor = self.cursor.child
@@ -121,6 +123,7 @@ class triangulation(Frame):
         self.pack()
         self.createWidgets()
         master.bind("<Key>", self.key)
+        self.new()
 
     def new(self):
         self.hide = False
@@ -236,8 +239,8 @@ class triangulation(Frame):
                 else:
                     node = node.left
                     dir = DOWN
-            self.canvas.create_text(hw - .75 * length + (half_length * (row_idx + 1)),
-                                    (row_idx + 2) * (altitude + vertical_gap) - (altitude/2),
+            self.canvas.create_text(hw - length + (half_length * (row_idx + 1)),
+                                    (row_idx + 2) * (altitude + vertical_gap) - (altitude),
                                     text=cnt, font="12x24")
             node = start_of_row.child
             if (node):
@@ -258,13 +261,49 @@ class triangulation(Frame):
                 else:
                     node = node.right
                     dir = DOWN
-            self.canvas.create_text(hw - half_length + self.rows * length / 2.0 - (length * (row_idx + 1)),
+            self.canvas.create_text(hw - (half_length/2) + self.rows * half_length - (length * (row_idx + 1)),
                                     (self.rows + 2) * (altitude + vertical_gap) - (altitude/2),
                                     text=cnt, font="12x24")
             node = start_of_row.child
             if (node):
                 node = node.left
+
+            # horiz arrow
+            self.canvas.create_line(hw - (half_length * self.rows / 2) - 130, self.rows * altitude / 2,
+                                    hw - (half_length * self.rows / 2) - 95, self.rows * altitude / 2,
+                                    fill="black", width=8, arrow="last", arrowshape=[12,12,8])
+            # ne/sw arrow
+            self.canvas.create_line(hw + (half_length * self.rows / 2) + 30, ((self.rows - 1) * altitude / 2) - altitude / 2,
+                                    hw + (half_length * self.rows / 2), (self.rows + 1) * altitude / 2,
+                                    fill="black", width=8, arrow="last", arrowshape=[12,12,8])
+            # nw/se arrow
+            self.canvas.create_line(hw - 15, (self.rows + 3) * altitude,
+                                    hw - 35, (self.rows + 2) * altitude,
+                                    fill="black", width=8, arrow="last", arrowshape=[12,12,8])
+
         # self.canvas.after(1, self.draw)
+
+    def insert(self):
+        node = self.cursor
+        node.state = FILLED
+        if (node.dir == DOWN):
+            if (node.parent and node.parent.left and node.parent.right):
+                node.parent.state = node.parent.left.state = node.parent.right.state = FILLED
+            elif (node.parent and node.left and node.right):
+                node.parent.state = node.left.state = node.right.state = FILLED
+            elif (node.right and node.right.right and node.right.parent):
+                node.right.state = node.right.right.state = node.right.parent.state = FILLED
+            elif (node.left and node.left.left and node.left.parent):
+                node.left.state = node.left.left.state = node.left.parent.state = FILLED
+        elif (node.dir == UP):
+            if (node.child and node.child.left and node.child.right):
+                node.child.state = node.child.left.state = node.child.right.state = FILLED
+            elif (node.child and node.left and node.right):
+                node.child.state = node.left.state = node.right.state = FILLED
+            elif (node.right and node.right.right and node.right.parent):
+                node.right.state = node.right.right.state = node.right.parent.state = FILLED
+            elif (node.left and node.left.left and node.left.parent):
+                node.left.state = node.left.left.state = node.left.parent.state = FILLED
 
     def open(self):
         self.canvas.delete("all")
@@ -279,21 +318,6 @@ class triangulation(Frame):
             data = line.split()
         
             if (numeric.match(data[1])):
-                for i in range(len(data)):
-                    self.canvas.create_text(hw - (half_length * row_num) + (length * i),
-                                            (row_num + 1) * altitude - (altitude/2), text=data[i], font="12x24")
-                # horiz arrow
-                self.canvas.create_line(hw - (half_length * row_num / 2) - 130, row_num * altitude / 2,
-                                        hw - (half_length * row_num / 2) - 95, row_num * altitude / 2,
-                                        fill="black", width=8, arrow="last", arrowshape=[12,12,8])
-                # ne/sw arrow
-                self.canvas.create_line(hw + (half_length * row_num / 2) + 30, (row_num - 1) * altitude / 2,
-                                        hw + (half_length * row_num / 2), (row_num + 1) * altitude / 2,
-                                        fill="black", width=8, arrow="last", arrowshape=[12,12,8])
-                # nw/se arrow
-                self.canvas.create_line(hw - 30, (row_num + 2) * altitude,
-                                        hw - 55, (row_num + 1) * altitude,
-                                        fill="black", width=8, arrow="last", arrowshape=[12,12,8])
                 break
             
             up = 1
