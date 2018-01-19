@@ -32,35 +32,49 @@ class triangle():
 class triangulation(Frame):
     def key(self, event):
         k = repr(event.keysym)
+        # print(k)
         if (k == "'q'"): self.quit()
         if (k == "'n'"): self.new()
         if (k == "'a'"): self.add()
         if (k == "'o'"): self.open()
         if (k == "'c'"): self.clear()
         if (k == "'i'"): self.insert()
+        if (k == "'s'"): self.save()
         if (k == "'h'"):
            if (self.hide == True): self.hide = False
            else: self.hide = True
         if (k == "'r'"): self.more_rows()
         if (k == "'R'"): self.fewer_rows()
-        if (k == "'Left'"):
+        if (k == "'7'"):
+            if (self.cursor.dir == UP and self.cursor.left): self.cursor = self.cursor.left
+            elif (self.cursor.dir == DOWN and self.cursor.parent): self.cursor = self.cursor.parent
+        if (k == "'9'"):
+            if (self.cursor.dir == UP and self.cursor.right): self.cursor = self.cursor.right
+            elif (self.cursor.dir == DOWN and self.cursor.parent): self.cursor = self.cursor.parent
+        if (k == "'1'"):
+            if (self.cursor.dir == UP and self.cursor.child): self.cursor = self.cursor.child
+            elif (self.cursor.dir == DOWN and self.cursor.left): self.cursor = self.cursor.left
+        if (k == "'3'"):
+            if (self.cursor.dir == UP and self.cursor.child): self.cursor = self.cursor.child
+            elif (self.cursor.dir == DOWN and self.cursor.right): self.cursor = self.cursor.right
+        if (k == "'Left'" or k == "'4'"):
             if (self.cursor.left):
                 self.cursor = self.cursor.left
-            elif (self.cursor.child):
-                self.cursor = self.cursor.child
-        if (k == "'Right'"):
+            # elif (self.cursor.child):
+                # self.cursor = self.cursor.child
+        if (k == "'Right'" or k == "'6'"):
             if (self.cursor.right):
                 self.cursor = self.cursor.right
-            elif (self.cursor.child):
-                self.cursor = self.cursor.child
-        if (k == "'Up'"):
+            # elif (self.cursor.child):
+                # self.cursor = self.cursor.child
+        if (k == "'Up'" or k == "'8'"):
             if (self.cursor.parent):
                 self.cursor = self.cursor.parent
-            elif (self.cursor.right and self.cursor.right.parent):
-                self.cursor = self.cursor.right
-            elif (self.cursor.left and self.cursor.left.parent):
-                self.cursor = self.cursor.left
-        if (k == "'Down'"):
+            # elif (self.cursor.right and self.cursor.right.parent):
+                # self.cursor = self.cursor.right
+            # elif (self.cursor.left and self.cursor.left.parent):
+                # self.cursor = self.cursor.left
+        if (k == "'Down'" or k == "'2'"):
             if (self.cursor.child):
                 self.cursor = self.cursor.child
         if (k == "'space'"):
@@ -182,7 +196,7 @@ class triangulation(Frame):
         node = self.top
         for row_idx in range(0, self.rows):
             start_of_row = node
-            dir = UP
+            node.dir = UP
             node_idx = 0
             cnt = 0
             while (node):
@@ -206,13 +220,14 @@ class triangulation(Frame):
                 if (self.hide == True):
                     color = "white"
 
-                if (dir == UP):
+                if (node.dir == UP):
                     self.canvas.create_polygon(x1, y1, x2, y2, x3, y3, x1, y1, outline="black", fill=color, width=3)
-                    dir = DOWN
+                    node = node.right
+                    if (node): node.dir = DOWN
                 else:
                     self.canvas.create_polygon(x1, y3, x2, y3, x3, y1, x1, y3, outline="black", fill=color, width=3)
-                    dir = UP
-                node = node.right
+                    node = node.right
+                    if (node): node.dir = UP
                 node_idx += 1
             
             self.canvas.create_text(hw - 1.3 * length - (half_length * (row_idx + 1)),
@@ -306,7 +321,6 @@ class triangulation(Frame):
     def open(self):
         self.canvas.delete("all")
 
-        numeric = re.compile("^[\d,]+$");
         filename = filedialog.askopenfilename(initialdir = ".", title = "Select file")
         f = open(filename, 'r')
 
@@ -343,6 +357,22 @@ class triangulation(Frame):
                     node.state = FILLED
                 prev_node = node
         self.draw()
+
+    def save(self):
+        f = open('newtri.txt', 'w')
+        node = self.top
+        start_of_row = node
+        while (node):
+            if (node.state == FILLED):
+                f.write(" X")
+            else:
+                f.write(" .")
+            node = node.right
+            if (node == None and start_of_row and start_of_row.child and start_of_row.child.left):
+                node = start_of_row.child.left
+                start_of_row = node
+                f.write("\n")
+        f.close()
 
 root = Tk()
 app = triangulation(master=root)
