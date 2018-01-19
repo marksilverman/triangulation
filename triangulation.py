@@ -25,6 +25,7 @@ class triangle():
         self.parent = self.child = self.left = self.right = None
         self.state = UNFILLED
         self.selected = 0
+        self.answer = 0
         self.dir = UP
         self.id = triangle.next_id
         triangle.next_id += 1
@@ -35,7 +36,6 @@ class triangulation(Frame):
         # print(k)
         if (k == "'q'"): self.quit()
         if (k == "'n'"): self.new()
-        if (k == "'a'"): self.add()
         if (k == "'o'"): self.open()
         if (k == "'c'"): self.clear()
         if (k == "'i'"): self.insert()
@@ -114,13 +114,13 @@ class triangulation(Frame):
         self.new_button["command"] = self.new
         self.new_button.pack({"side": "left"})
 
-        self.add_button = Button(self, text="add")
-        self.add_button["command"] = self.add
-        self.add_button.pack({"side": "left"})
-
         self.open_button = Button(self, text="open")
         self.open_button["command"] = self.open
         self.open_button.pack({"side": "left"})
+
+        self.save_button = Button(self, text="save")
+        self.save_button["command"] = self.save
+        self.save_button.pack({"side": "left"})
 
         self.quit_button = Button(self, text="quit")
         self.quit_button["command"] = self.quit
@@ -162,15 +162,6 @@ class triangulation(Frame):
             parent_node = start_of_current_row;
         self.draw()
     
-    def add(self):
-        node = self.top
-        node = node.child.child
-        node.state = FILLED
-        node = node.child
-        node.state = FILLED
-        node.left.state = FILLED
-        node.right.state = FILLED
-
     def clear(self):
         node = self.top
         dir = RIGHT
@@ -321,7 +312,7 @@ class triangulation(Frame):
     def open(self):
         self.canvas.delete("all")
 
-        filename = filedialog.askopenfilename(initialdir = ".", title = "Select file")
+        filename = filedialog.askopenfilename(initialdir = ".", filetypes = (("text","*.txt"), ("all files","*.*")))
         f = open(filename, 'r')
 
         triangle.next_id = 0
@@ -359,7 +350,8 @@ class triangulation(Frame):
         self.draw()
 
     def save(self):
-        f = open('newtri.txt', 'w')
+        filename = filedialog.asksaveasfilename(initialdir = ".", filetypes = (("text","*.txt"), ("all files","*.*")))
+        f = open(filename, 'w')
         node = self.top
         start_of_row = node
         while (node):
