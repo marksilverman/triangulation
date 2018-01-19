@@ -9,9 +9,6 @@ w = 900
 h = 700
 hw = w // 2
 hh = h // 2
-vertical_gap = 0
-left_gap = 10;
-right_gap = 0;
 
 UP = 0
 DOWN = 1
@@ -27,9 +24,9 @@ class triangle():
     def __init__(self):
         self.parent = self.child = self.left = self.right = None
         self.state = UNFILLED
-        self.id = triangle.next_id
         self.selected = 0
         self.dir = UP
+        self.id = triangle.next_id
         triangle.next_id += 1
 
 class triangulation(Frame):
@@ -179,6 +176,7 @@ class triangulation(Frame):
                     node = node.child
                     if (node): node = node.left
                     dir = RIGHT
+
     def draw(self):
         self.canvas.delete("all")
         node = self.top
@@ -189,7 +187,7 @@ class triangulation(Frame):
             cnt = 0
             while (node):
                 x1 = hw - length - (half_length * (row_idx + 1)) + (half_length * node_idx)
-                y1 = (row_idx + 2) * (altitude + vertical_gap)
+                y1 = (row_idx + 2) * altitude
                 x2 = x1 + length
                 y2 = y1
                 x3 = x1 + half_length
@@ -218,7 +216,7 @@ class triangulation(Frame):
                 node_idx += 1
             
             self.canvas.create_text(hw - 1.3 * length - (half_length * (row_idx + 1)),
-                                    (row_idx + 2) * (altitude + vertical_gap) - (altitude/2),
+                                    (row_idx + 2) * altitude - (altitude/2),
                                     text=cnt, font="12x24")
             node = start_of_row.child
             if (node):
@@ -240,7 +238,7 @@ class triangulation(Frame):
                     node = node.left
                     dir = DOWN
             self.canvas.create_text(hw - length + (half_length * (row_idx + 1)),
-                                    (row_idx + 2) * (altitude + vertical_gap) - (altitude),
+                                    (row_idx + 2) * altitude - (altitude),
                                     text=cnt, font="12x24")
             node = start_of_row.child
             if (node):
@@ -262,7 +260,7 @@ class triangulation(Frame):
                     node = node.right
                     dir = DOWN
             self.canvas.create_text(hw - (half_length/2) + self.rows * half_length - (length * (row_idx + 1)),
-                                    (self.rows + 2) * (altitude + vertical_gap) - (altitude/2),
+                                    (self.rows + 2) * altitude - (altitude / 2),
                                     text=cnt, font="12x24")
             node = start_of_row.child
             if (node):
@@ -312,45 +310,39 @@ class triangulation(Frame):
         filename = filedialog.askopenfilename(initialdir = ".", title = "Select file")
         f = open(filename, 'r')
 
-        row_num = 0
+        triangle.next_id = 0
+        self.rows = 0
+        start_of_row = None
         for line in f:
-            row_num = row_num + 1
-            data = line.split()
-        
-            if (numeric.match(data[1])):
-                break
-            
-            up = 1
-            triangle_list = data[1:-1]
+            triangle_list = line.split()
             triangle_cnt = len(triangle_list)
+            if (triangle_cnt == 0):
+                break
+            self.rows = self.rows + 1
+            parent_node = start_of_row
+            prev_node = None
             for triangle_idx in range(triangle_cnt):
-                x1 = hw - length - (half_length * row_num) + (half_length * triangle_idx)
-                y1 = (row_num + 1) * (altitude + vertical_gap)
-                x2 = x1 + length
-                y2 = y1
-                x3 = x1 + half_length
-                y3 = y1 - altitude
-
-                triangle = triangle_list[triangle_idx]
-                if (triangle == '.'):
-                    color = "white"
-                elif (triangle == "|"):
-                    color = "pink"
-                else:
-                    color = "darkgray"
-
+                node = triangle()
                 if (triangle_idx == 0):
-                    self.canvas.create_text(x1 - half_length // 2, y1 - (altitude/2), text=data[0], font="12x24")
-
-                if (up == 1):
-                    self.canvas.create_polygon(x1, y1, x2, y2, x3, y3, x1, y1, outline="black", fill=color, width=3)
-                    up = 0
+                    start_of_row = node
+                    if (self.rows == 1):
+                        self.top = self.cursor = node
                 else:
-                    self.canvas.create_polygon(x1, y3, x2, y3, x3, y1, x1, y3, outline="black", fill=color, width=3)
-                    up = 1
-
-                if (triangle_idx == triangle_cnt - 1):
-                    self.canvas.create_text(x1 + 1.3 * length, y1 - (altitude/2), text=data[-1], font="12x24")
+                    node.left = prev_node
+                    prev_node.right = node
+                    if (triangle_idx < triangle_cnt - 1):
+                        node.parent = parent_node
+                        parent_node.child = node
+                        parent_node = parent_node.right
+                s = triangle_list[triangle_idx]
+                if (s == '.'):
+                    node.state = UNFILLED
+                elif (s == "|"):
+                    node.state = FROZEN
+                else:
+                    node.state = FILLED
+                prev_node = node
+        self.draw()
 
 root = Tk()
 app = triangulation(master=root)
