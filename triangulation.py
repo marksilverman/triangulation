@@ -5,29 +5,17 @@ from tkinter import *
 from tkinter import filedialog
 import math
 
-#up
-#11,22,33
-#left-bottom,right-bottom,middle-top
+#up 11,22,33 left-bottom,right-bottom,middle-top
+#down 13,23,31 left-top,right-top,middle-bottom
+#x1 leftmost, x3 middle, x2 rightmost
+#y1 bottom, y2 = y1, y3 top
 
-#down
-#13,23,31
-#left-top,right-top,middle-bottom
-
-#x1 leftmost
-#x3 middle
-#x2 rightmost
-
-#y1 bottom
-#y2 = y1
-#y3 top
-
-length = 50
+length = 40
 altitude = length * math.sqrt(3) / 2.0
 half_length = length // 2
-w = 900
-h = 700
-hw = w // 2
-hh = h // 2
+canvas_width = 900
+canvas_height = 700
+center_x = canvas_width // 2
 
 UP = 0
 DOWN = 1
@@ -42,12 +30,12 @@ class triangle():
     next_id = 0
     def __init__(self):
         self.parent = self.child = self.left = self.right = None
+        self.xleft = self.xright = self.xmiddle = self.ybottom = self.ytop = 0
         self.state = UNFILLED
         self.answer = False
         self.dir = UP
         self.id = triangle.next_id
         triangle.next_id += 1
-        self.xleft = self.xright = self.xmiddle = self.ybottom = self.ytop = 0
 
     def toggle(self, which=LEFT):
         if (which == LEFT):
@@ -69,18 +57,14 @@ class triangle():
 class triangulation(Frame):
     play_mode = False
 
-    def left_click(self, event):
-        self.click(event, LEFT)
-
-    def right_click(self, event):
-        self.click(event, RIGHT)
+    def left_click(self, event): self.click(event, LEFT)
+    def right_click(self, event): self.click(event, RIGHT)
 
     def click(self, event, which):
         self.cx = event.x
         self.cy = event.y
         node = self.top
-        if (event.y < node.ytop):
-            return
+        if (event.y < node.ytop): node = None
         while (node):
             if (event.y > node.ybottom):
                 node = node.child
@@ -108,9 +92,9 @@ class triangulation(Frame):
                         o = node.ybottom - (node.xmiddle - event.x) * math.tan(math.radians(60))
                         if (event.y > o): node = node.left
                 node.toggle(which)
-                self.cursor = node
-                self.draw()
                 break
+        self.cursor = node
+        self.draw()
     
     def key(self, event):
         k = repr(event.keysym)
@@ -121,6 +105,7 @@ class triangulation(Frame):
         if (k == "'c'"): self.clear()
         if (k == "'i'"): self.insert()
         if (k == "'s'"): self.save()
+        if (k == "'p'"): self.play()
         if (k == "'h'"):
            if (self.hide == True): self.hide = False
            else: self.hide = True
@@ -169,7 +154,10 @@ class triangulation(Frame):
                 self.cursor = self.cursor.child
         if (k == "'space'"):
             if (self.cursor == None): self.cursor = self.top
-            self.cursor.toggle()
+            self.cursor.toggle(LEFT)
+        if (k == "'f'"):
+            if (self.cursor == None): self.cursor = self.top
+            self.cursor.toggle(RIGHT)
         self.draw()
 
     def more_rows(self):
@@ -219,7 +207,7 @@ class triangulation(Frame):
         self.play_button["command"] = self.play
         self.play_button.pack({"side": "left"})
 
-        self.canvas = Canvas(self.master, width=w, height=h, bg='white')
+        self.canvas = Canvas(self.master, width=canvas_width, height=canvas_height, bg='white')
         self.canvas.pack({"side": "left"})
 
     def __init__(self, master):
@@ -324,14 +312,15 @@ class triangulation(Frame):
         else:
             self.canvas.create_text(100, 50, text="design mode", font="12x24")
         node = self.top
+        total_cnt = 0
+        problem_cnt = 0
         for row_idx in range(0, self.rows):
             start_of_row = node
             node.dir = UP
             node_idx = 0
             cnt = 0
-            total_cnt = 0
             while (node):
-                x1 = hw - length - (half_length * (row_idx + 1)) + (half_length * node_idx)
+                x1 = center_x - length - (half_length * (row_idx + 1)) + (half_length * node_idx)
                 y1 = (row_idx + 2) * altitude
                 x2 = x1 + length
                 y2 = y1
@@ -341,15 +330,16 @@ class triangulation(Frame):
                 if (node.answer == True):
                     cnt += 1
                     total_cnt += 1
-                    if (triangulation.play_mode == True and node.state != FILLED): winner = False
-                elif (triangulation.play_mode == True and node.state == FILLED):
+                
+                if (triangulation.play_mode == True and (node.answer == True and node.state != FILLED) or (node.answer == False and node.state == FILLED)):
                     winner = False
+                    problem_cnt += 1
 
                 if (node.state == FILLED):
-                    color = "darkgreen" # "darkgray"
+                    color = "darkgreen"
                     if (self.play_mode == True):
                         cnt -= 1
-                        total_cnt -= 1
+                        # total_cnt -= 1
                 elif (node.state == UNFILLED):
                     if (self.play_mode):
                         color = "lightgray"
@@ -386,7 +376,7 @@ class triangulation(Frame):
                 color = "red"
             elif (cnt == 0):
                 color = "darkgreen"
-            self.canvas.create_text(hw - 1.3 * length - (half_length * (row_idx + 1)),
+            self.canvas.create_text(center_x - 1.3 * length - (half_length * (row_idx + 1)),
                                     (row_idx + 2) * altitude - (altitude/2),
                                     fill=color, text=cnt, font="12x24")
             node = start_of_row.child
@@ -408,11 +398,11 @@ class triangulation(Frame):
             while (node):
                 if (node.answer):
                     cnt += 1
-                    total_cnt += 1
+                    # total_cnt += 1
                 if (node.state == FILLED):
                     if (self.play_mode == True):
                         cnt -= 1
-                        total_cnt -= 1
+                        # total_cnt -= 1
                 if (dir == DOWN):
                     node = node.child
                     dir = LEFT
@@ -424,7 +414,7 @@ class triangulation(Frame):
                 color = "red"
             elif (cnt == 0):
                 color = "darkgreen"
-            self.canvas.create_text(hw - length + (half_length * (row_idx + 1)),
+            self.canvas.create_text(center_x - length + (half_length * (row_idx + 1)),
                                     (row_idx + 2) * altitude - (altitude),
                                     fill=color, text=cnt, font="12x24")
             node = start_of_row.child
@@ -440,11 +430,11 @@ class triangulation(Frame):
             while (node):
                 if (node.answer):
                     cnt += 1
-                    total_cnt += 1
+                    # total_cnt += 1
                 if (node.state == FILLED):
                     if (self.play_mode == True):
                         cnt -= 1
-                        total_cnt -= 1
+                        # total_cnt -= 1
                 if (dir == DOWN):
                     node = node.child
                     dir = RIGHT
@@ -456,7 +446,7 @@ class triangulation(Frame):
                 color = "red"
             elif (cnt == 0):
                 color = "darkgreen"
-            self.canvas.create_text(hw - (half_length/2) + self.rows * half_length - (length * (row_idx + 1)),
+            self.canvas.create_text(center_x - (half_length/2) + self.rows * half_length - (length * (row_idx + 1)),
                                     (self.rows + 2) * altitude - (altitude / 2),
                                     fill=color, text=cnt, font="12x24")
             node = start_of_row.child
@@ -464,22 +454,22 @@ class triangulation(Frame):
                 node = node.left
 
             # horiz arrow
-            self.canvas.create_line(hw - (half_length * self.rows / 2) - 130, self.rows * altitude / 2,
-                                    hw - (half_length * self.rows / 2) - 95, self.rows * altitude / 2,
+            self.canvas.create_line(center_x - (half_length * self.rows / 2) - 130, self.rows * altitude / 2,
+                                    center_x - (half_length * self.rows / 2) - 95, self.rows * altitude / 2,
                                     fill="black", width=8, arrow="last", arrowshape=[12,12,8])
             # ne/sw arrow
-            self.canvas.create_line(hw + (half_length * self.rows / 2) + 30, ((self.rows - 1) * altitude / 2) - altitude / 2,
-                                    hw + (half_length * self.rows / 2), (self.rows + 1) * altitude / 2,
+            self.canvas.create_line(center_x + (half_length * self.rows / 2) + 30, ((self.rows - 1) * altitude / 2) - altitude / 2,
+                                    center_x + (half_length * self.rows / 2), (self.rows + 1) * altitude / 2,
                                     fill="black", width=8, arrow="last", arrowshape=[12,12,8])
             # nw/se arrow
-            self.canvas.create_line(hw - 15, (self.rows + 3) * altitude,
-                                    hw - 35, (self.rows + 2) * altitude,
+            self.canvas.create_line(center_x - 15, (self.rows + 3) * altitude,
+                                    center_x - 35, (self.rows + 2) * altitude,
                                     fill="black", width=8, arrow="last", arrowshape=[12,12,8])
 
-        self.canvas.create_text(100, 150, text="total: " + str(total_cnt), font="12x24")
+        self.canvas.create_text(100, 150, text="total shaded triangles: " + str(total_cnt), font="12x24")
+        # if (triangulation.play_mode):
+            # self.canvas.create_text(100, 200, text="problems: " + str(problem_cnt), font="12x24")
         # self.canvas.after(1, self.draw)
-        # if (self.cx and self.cy):
-            # self.canvas.create_oval(self.cx - 5, self.cy - 5, self.cx + 5, self.cy + 5, outline="black", fill="green")
 
     def insert(self):
         node = self.cursor
@@ -534,15 +524,9 @@ class triangulation(Frame):
                         parent_node.child = node
                         parent_node = parent_node.right
                 s = triangle_list[triangle_idx]
-                if (s == '.'):
-                    node.state = UNFILLED
-                elif (s == "|"):
-                    node.state = FROZEN
-                else:
-                    node.state = FILLED
-                    node.answer = True
+                if (s == 'X'): node.answer = True
                 prev_node = node
-        self.play_mode = True
+        triangulation.play_mode = True
         self.draw()
 
     def save(self):
