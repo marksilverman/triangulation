@@ -22,6 +22,9 @@ UNFILLED = 0
 FILLED = 1
 FROZEN = 2
 
+def random_color():
+    return "#" + format(int(random.randint(0, 0xFFFFFF)), '06x')
+
 class triangle():
     next_id = 0
     def __init__(self):
@@ -243,6 +246,9 @@ class triangulation(Frame):
     def new(self):
         self.cx = 0
         self.cy = 0
+        triangle.next_id = 0
+        self.winner = False
+        self.stop_recursion = False
         triangulation.play_mode = False
         self.hide = False
         self.cursor = self.top = new_node = parent_node = triangle()
@@ -271,6 +277,7 @@ class triangulation(Frame):
     
     # clears the state but not the answer flag
     def clear(self):
+        self.winner = False
         self.cursor = node = self.top
         dir = RIGHT
         while(node):
@@ -338,7 +345,11 @@ class triangulation(Frame):
                     dir = RIGHT
 
     def draw(self):
-        winner = True
+        if (self.winner):
+            already_won = True
+        else:
+            already_won = False
+        self.winner = True
         self.canvas.delete("all")
         if (triangulation.play_mode):
             self.canvas.create_text(100, 50, text="play mode", font="12x24")
@@ -348,6 +359,8 @@ class triangulation(Frame):
         total_cnt = 0
         problem_cnt = 0
         for row_idx in range(0, self.rows):
+            left_col_idx = 0
+            right_col_idx = row_idx
             start_of_row = node
             node.dir = UP
             node_idx = 0
@@ -365,7 +378,7 @@ class triangulation(Frame):
                     total_cnt += 1
                 
                 if (triangulation.play_mode == True and (node.answer == True and node.state != FILLED) or (node.answer == False and node.state == FILLED)):
-                    winner = False
+                    self.winner = False
                     problem_cnt += 1
 
                 if (node.state == FILLED):
@@ -383,19 +396,29 @@ class triangulation(Frame):
 
                 if (self.hide == True): color = "white"
 
+                mytags = ["all"]
+                mytags.append(str("triangle") + str(node.id))
+                mytags.append(str("row") + str(row_idx))
+                mytags.append(str("left_col") + str(left_col_idx))
+                mytags.append(str("right_col") + str(right_col_idx))
+
                 pg = None
                 if (node.dir == UP):
                     xy = ((node.xleft, node.ybottom), (node.xright, node.ybottom), (node.xmiddle, node.ytop))
                     if (node == self.cursor): clist = xy
-                    pg = self.canvas.create_polygon(xy, outline="black", fill=color, activefill="gold", width=3)
+                    mytags.append("uptriangle")
+                    pg = self.canvas.create_polygon(xy, outline="black", fill=color, activefill="gold", width=3, tags=mytags)
                     node = node.right
                     if (node): node.dir = DOWN
+                    right_col_idx -= 1
                 else:
                     xy = ((node.xleft, node.ytop), (node.xright, node.ytop), (node.xmiddle, node.ybottom))
                     if (node == self.cursor): clist = xy
-                    pg = self.canvas.create_polygon(xy, outline="black", fill=color, activefill="gold", width=3)
+                    mytags.append("downtriangle")
+                    pg = self.canvas.create_polygon(xy, outline="black", fill=color, activefill="gold", width=3, tags=mytags)
                     node = node.right
                     if (node): node.dir = UP
+                    left_col_idx += 1
                 node_idx += 1
                 # self.canvas.tag_bind(pg, '<Button-1>', self.foo)
             
@@ -408,21 +431,15 @@ class triangulation(Frame):
             node = start_of_row.child
             if (node): node = node.left
 
-        if (self.cursor and self.hide == False):
+        if (self.cursor and self.hide == False and (already_won == True or triangulation.play_mode == False or self.winner == False)):
             self.canvas.create_polygon(clist, outline="SlateBlue1", fill="", width=6)
             # self.canvas.tag_bind(pg, '<Button-1>', self.foo)
 
-        if (triangulation.play_mode and winner):
-            for i in range(0, 16):
-                color = "#" + format(int(random.randint(0, 0xFFFFFF)), '06x')
-                # print(color)
-                self.canvas.config(bg=color)
-                self.canvas.update_idletasks()
-                self.canvas.after(100)
-            self.canvas.config(bg="ivory")
-            self.canvas.update_idletasks()
-            self.canvas.create_text(100, 100, text="winner!", font="12x24")
+        # winner!
+        if (already_won == False and triangulation.play_mode and self.winner == True):
+            self.chicken_dinner()
 
+        self.stop_recursion = False
         # calculate the totals on the right
         node = self.top
         for row_idx in range(0, self.rows):
@@ -579,6 +596,56 @@ class triangulation(Frame):
                 start_of_row = node
                 f.write("\n")
         f.close()
+
+    def chicken_dinner(self):
+        # the entire pyramid
+        for i in range(0, 10):
+            color = random_color()
+            self.canvas.itemconfig("all", fill=color)
+            self.canvas.update_idletasks()
+            self.canvas.after(50)
+
+        # the up and down triangles
+        for i in range(0, 10):
+            for j in range(0, 2):
+                color = "#" + format(int(random.randint(0, 0xFFFFFF)), '06x')
+                if (j == 0): self.canvas.itemconfig("uptriangle", fill=color)
+                elif (j == 1): self.canvas.itemconfig("downtriangle", fill=color)
+                self.canvas.update_idletasks()
+                self.canvas.after(50)
+
+        # random triangles
+        for i in range(0, 40):
+            for j in range(0, 10):
+                color = "#" + format(int(random.randint(0, 0xFFFFFF)), '06x')
+                mytags = "triangle"
+                mytags += str(random.randint(0, triangle.next_id))
+                self.canvas.itemconfig(mytags, fill=color)
+            self.canvas.update_idletasks()
+            self.canvas.after(50)
+
+        # random wipes
+        for j in range(0, self.rows):
+            for i in range(0, 3):
+                if (i == 0): mytags = "row"
+                elif (i == 1): mytags = "left_col"
+                elif (i == 2): mytags = "right_col"
+                color = "#" + format(int(random.randint(0, 0xFFFFFF)), '06x')
+                self.canvas.itemconfig(mytags + str(random.randint(0, self.rows)), fill=color)
+                self.canvas.update_idletasks()
+                self.canvas.after(50)
+
+        # wipes
+        for i in range(0, 3):
+            if (i == 0): mytags = "row"
+            elif (i == 1): mytags = "left_col"
+            elif (i == 2): mytags = "right_col"
+            for j in range(0, self.rows):
+                color = "#" + format(int(random.randint(0, 0xFFFFFF)), '06x')
+                self.canvas.itemconfig(mytags + str(j), fill=color)
+                self.canvas.update_idletasks()
+                self.canvas.after(50)
+        self.draw()
 
 root = Tk()
 app = triangulation(master=root)
