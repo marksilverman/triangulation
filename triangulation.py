@@ -186,7 +186,7 @@ class triangulation(Frame):
         self.row_label = Label(self)
         self.row_label["text"] = "rows:"
         self.row_label.pack({"side": "left"})
-        self.rows = 8
+        self.rows = 12
         self.tv_rows = StringVar()
         self.tv_rows.set(str(self.rows))
         self.row_count = Label(self)
@@ -252,7 +252,6 @@ class triangulation(Frame):
         self.cy = 0
         triangle.next_id = 0
         self.winner = False
-        self.stop_recursion = False
         triangulation.play_mode = False
         self.hide = False
         self.cursor = self.top = new_node = parent_node = triangle()
@@ -446,8 +445,8 @@ class triangulation(Frame):
         # winner!
         if (already_won == False and triangulation.play_mode and self.winner == True):
             self.chicken_dinner()
+            return
 
-        self.stop_recursion = False
         # calculate the totals on the right
         node = self.top
         for row_idx in range(0, self.rows):
@@ -595,7 +594,7 @@ class triangulation(Frame):
             self.canvas.after(50)
 
         # the up and down triangles
-        for i in range(0, 4):
+        for i in range(0, 2):
             for j in range(0, 2):
                 color = "#" + format(int(random.randint(0, 0xFFFFFF)), '06x')
                 if (j == 0): self.canvas.itemconfig("uptriangle", fill=color)
@@ -603,9 +602,9 @@ class triangulation(Frame):
                 self.canvas.update_idletasks()
                 self.canvas.after(50)
 
-        # random triangles
-        for i in range(0, 32):
-            for j in range(0, 10):
+        # twinkles
+        for i in range(0, 64):
+            for j in range(0, 30):
                 color = "#" + format(int(random.randint(0, 0xFFFFFF)), '06x')
                 mytags = "triangle"
                 mytags += str(random.randint(0, triangle.next_id))
@@ -614,7 +613,7 @@ class triangulation(Frame):
             self.canvas.after(50)
 
         # random wipes
-        for j in range(0, self.rows * 2):
+        for j in range(0, self.rows):
             for i in range(0, 3):
                 if (i == 0): mytags = "row"
                 elif (i == 1): mytags = "left_col"
@@ -625,18 +624,24 @@ class triangulation(Frame):
                 self.canvas.after(50)
 
         # wipes
-        for i in range(0, 5):
-            if (i == 0): mytags = "row"
-            elif (i == 1): mytags = "left_col"
-            elif (i == 2): mytags = "right_col"
-            elif (i == 3): mytags = "alt_left_col"
-            elif (i == 4): mytags = "alt_right_col"
-            for j in range(0, self.rows):
-                color = "#" + format(int(random.randint(0, 0xFFFFFF)), '06x')
-                self.canvas.itemconfig(mytags + str(j), fill=color)
-                self.canvas.update_idletasks()
-                self.canvas.after(50)
-        self.draw()
+        for i in range(0, 2):
+            for j in range(0, 5):
+                if (j == 0): mytags = "row"
+                elif (j == 1): mytags = "left_col"
+                elif (j == 2): mytags = "right_col"
+                elif (j == 3): mytags = "alt_left_col"
+                elif (j == 4): mytags = "alt_right_col"
+                for k in range(0, self.rows):
+                    if (i == 0):
+                        self.canvas.itemconfig(mytags + str(k), fill=random_color())
+                    else:
+                        self.canvas.itemconfig(mytags + str(self.rows - k - 1), fill=random_color())
+                        #self.canvas.itemconfig("all", fill="ivory")
+                        #self.canvas.itemconfig(mytags + str(k), fill="brown")
+                        #self.canvas.itemconfig(mytags + str(k+2), fill="brown")
+                    self.canvas.update_idletasks()
+                    self.canvas.after(50)
+        # self.draw()
 
 root = Tk()
 app = triangulation(master=root)
