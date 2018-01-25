@@ -122,12 +122,9 @@ class triangulation(Frame):
         if (k == "'p'"): self.play()
         if (k == "'r'"): self.draw()
         if (k == "'l'"):
-                self.scroll('w')
-                self.scroll('i')
-                self.scroll('n')
-                self.scroll('n')
-                self.scroll('e')
-                self.scroll('r')
+            msg = "triangulation"
+            for i in range(0, len(msg)):
+                self.scroll(msg[i:i+1])
         if (k == "'h'"):
            if (self.hide == True): self.hide = False
            else: self.hide = True
@@ -602,44 +599,57 @@ class triangulation(Frame):
                 s = triangle_list[triangle_idx]
                 if (s == 'X'): node.answer = True
                 prev_node = node
-        triangulation.play_mode = False
         node = self.top
-        # while (node.child): node = node.child
+        while (node.child): node = node.child
+        while (node.right): node = node.right
+        node = node.left.left
+        if (node.dir != UP): node = node.left
         while (node):
+            last_node = node
             self.show(node, letter_top)
-            node = node.child
-            if (node): node = node.child
-            self.draw()
+            if (node.parent == None or node.parent.left == None):
+                if (letter_top):
+                    letter_top = letter_top.child
+                    if (letter_top): letter_top = letter_top.right
+                    if (letter_top == None):
+                        break
+            else:
+                node = node.parent.left
+            if (node == None): node = last_node
+            self.canvas.delete("temp")
+            self.canvas.update_idletasks()
 
+    # this function shows letter_node at node
     def show(self, node, letter_node):
-        starting_node = node
-        starting_letter_node = letter_node
+        center_node = node
+        center_letter = letter_node
         dir = LEFT
+        last_letter = None
         while (node and letter_node):
-            if (letter_node.answer):
-                node.draw(self.canvas, "black", "temp")
+            if (letter_node != last_letter and letter_node.answer):
+                node.draw(self.canvas, "red", "temp")
+            last_letter = letter_node
             if (dir == LEFT):
                 if (node.left and letter_node.left):
                     node = node.left
                     letter_node = letter_node.left
                 else:
-                    node = starting_node
-                    letter_node = starting_letter_node
+                    node = center_node
+                    letter_node = center_letter
                     dir = RIGHT
             elif (dir == RIGHT):
                 if (node.right and letter_node.right):
                     node = node.right
                     letter_node = letter_node.right
                 else:
-                    starting_node = node = starting_node.child
-                    starting_letter_node = letter_node = starting_letter_node.child
+                    center_node = node = center_node.child
+                    center_letter = letter_node = center_letter.child
                     dir = LEFT
             else:
                 node = None
                 letter_node = None
         self.canvas.update_idletasks()
         self.canvas.after(100)
-
 
     def save(self):
         filename = filedialog.asksaveasfilename(initialdir = ".", filetypes = (("text","*.txt"), ("all files","*.*")))
@@ -658,6 +668,7 @@ class triangulation(Frame):
                 f.write("\n")
         f.close()
 
+    # winner, winner
     def chicken_dinner(self):
         # the entire pyramid
         for i in range(0, 8):
