@@ -714,13 +714,13 @@ class triangulation(Frame):
                 if (i == 0):
                     self.canvas.itemconfig(mytags + str(j), fill=random_color())
                 else:
-                    self.canvas.itemconfig(mytags + str(self.rows - j), fill=random_color())
+                    self.canvas.itemconfig(mytags + str(self.rows - j - 1), fill=random_color())
                 self.canvas.update_idletasks()
                 self.canvas.after(50)
 
         # column wipes
-        for i in range(0, 2):
-            for j in range(0, 4):
+        for j in range(0, 4):
+            for i in range(0, 2):
                 if (j == 0): mytags = "left_col"
                 elif (j == 1): mytags = "alt_left_col"
                 elif (j == 2): mytags = "right_col"
