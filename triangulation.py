@@ -63,54 +63,20 @@ class triangle():
 class triangulation(Frame):
     play_mode = False
 
-    #def foo(self, event):
-    #    print("foo")
-    #    print(event.widget.find_closest(event.x, event.y))
-    #    if self.canvas.find_withtag(CURRENT):
-    #        self.canvas.itemconfig(CURRENT, fill="blue")
-    #        self.canvas.update_idletasks()
-    #        self.canvas.after(200)
-    #        self.canvas.itemconfig(CURRENT, fill="red")
-
-    def left_click(self, event): self.click(event, LEFT)
-    def right_click(self, event): self.click(event, RIGHT)
-
-    def click(self, event, which):
-        self.cx = event.x
-        self.cy = event.y
-        node = self.top
-        if (event.y < node.ytop): node = None
-        while (node):
-            if (event.y > node.ybottom):
-                node = node.child
-            elif (event.x > node.xright):
-                node = node.right
-            elif (event.x < node.xleft):
-                node = node.left
-            else:
-                # our bounding box always overlaps two triangles
-                # need to see if the the click was above or below the side of the triangle
-                # tangent(angle) = opposite / ajacent
-                # we know the angle and the length of the ajacent side; need to find the opposite
-                if (node.dir == UP):
-                    if (event.x > node.xmiddle and node.right):
-                        o = node.ybottom - (node.xright - event.x) * math.tan(math.radians(60))
-                        if (event.y < o): node = node.right
-                    elif (event.x < node.xmiddle and node.left):
-                        o = node.ybottom - (event.x - node.xleft) * math.tan(math.radians(60))
-                        if (event.y < o): node = node.left
-                elif (node.dir == DOWN):
-                    if (event.x > node.xmiddle and node.right):
-                        o = node.ybottom - (event.x - node.xmiddle) * math.tan(math.radians(60))
-                        if (event.y > o): node = node.right
-                    elif (event.x < node.xmiddle and node.left):
-                        o = node.ybottom - (node.xmiddle - event.x) * math.tan(math.radians(60))
-                        if (event.y > o): node = node.left
-                node.toggle(which)
-                break
-        self.cursor = node
+    def click(self, event):
+        self.cursor = None
         self.draw()
-    
+
+    def left_click(self, event, node):
+        self.cursor = None
+        node.toggle(LEFT)
+        self.draw()
+
+    def right_click(self, event, node):
+        self.cursor = None
+        node.toggle(RIGHT)
+        self.draw()
+
     def key(self, event):
         k = repr(event.keysym)
         if (k == "'q'"): self.quit()
@@ -240,8 +206,8 @@ class triangulation(Frame):
         self.pack()
         self.createWidgets()
         master.bind("<Key>", self.key)
-        master.bind("<Button-1>", self.left_click)
-        master.bind("<Button-3>", self.right_click)
+        self.canvas.bind("<Button-1>", self.click)
+        self.canvas.bind("<Button-3>", self.click)
         self.right_arrow = PhotoImage(file="right arrow.gif")
         self.up_left_arrow = PhotoImage(file="up left arrow.gif")
         self.down_left_arrow = PhotoImage(file="down left arrow.gif")
@@ -259,8 +225,6 @@ class triangulation(Frame):
         self.draw()
 
     def new(self):
-        self.cx = 0
-        self.cy = 0
         triangle.next_id = 0
         self.winner = False
         triangulation.play_mode = False
@@ -271,6 +235,7 @@ class triangulation(Frame):
             node_cnt = 1 + row_idx * 2
             for node_idx in range(0, node_cnt):
                 new_node = triangle()
+
                 if (node_idx % 2):
                     new_node.dir = DOWN
                 else:
@@ -414,6 +379,9 @@ class triangulation(Frame):
                 mytags.append(str("alt_left_col") + str(alt_left_col_idx))
                 mytags.append(str("alt_right_col") + str(alt_right_col_idx))
 
+                self.canvas.tag_bind(str("triangle") + str(node.id), "<Button-1>", lambda event, n=node: self.left_click(event, n))
+                self.canvas.tag_bind(str("triangle") + str(node.id), "<Button-3>", lambda event, n=node: self.right_click(event, n))
+            
                 if (node.dir == UP):
                     node.xy = ((node.xleft, node.ybottom), (node.xright, node.ybottom), (node.xmiddle, node.ytop))
                     mytags.append("uptriangle")
@@ -431,7 +399,7 @@ class triangulation(Frame):
                     left_col_idx += 1
                     alt_right_col_idx -= 1
                 node_idx += 1
-            
+
             color = "black"
             if (cnt < 0): color = "tomato"
             elif (cnt == 0): color = "darkgreen"
@@ -440,6 +408,9 @@ class triangulation(Frame):
                                     fill=color, text=cnt, font="12x24", tags="text")
             node = start_of_row.child
             if (node): node = node.left
+
+        #self.canvas.tag_bind("all", "<Button-1>", self.left_click)
+        #self.canvas.tag_bind("all", "<Button-3>", self.right_click)
 
         if (self.cursor and self.hide == False and (already_won == True or triangulation.play_mode == False or self.winner == False)):
             self.cursor.outline(self.canvas)
@@ -671,14 +642,14 @@ class triangulation(Frame):
     # winner, winner
     def chicken_dinner(self):
         # the entire pyramid
-        for i in range(0, 8):
+        for i in range(0, 4):
             color = random_color()
             self.canvas.itemconfig("all", fill=color)
             self.canvas.update_idletasks()
             self.canvas.after(50)
 
         # the up and down triangles
-        for i in range(0, 4):
+        for i in range(0, 2):
             for j in range(0, 2):
                 color = "#" + format(int(random.randint(0, 0xFFFFFF)), '06x')
                 if (j == 0): self.canvas.itemconfig("uptriangle", fill=color)
@@ -687,7 +658,7 @@ class triangulation(Frame):
                 self.canvas.after(50)
 
         # twinkles
-        for i in range(0, 32):
+        for i in range(0, 16):
             for j in range(0, 30):
                 color = "#" + format(int(random.randint(0, 0xFFFFFF)), '06x')
                 mytags = "triangle"
@@ -732,7 +703,6 @@ class triangulation(Frame):
                         self.canvas.itemconfig(mytags + str(self.rows - k - 1), fill=random_color())
                     self.canvas.update_idletasks()
                     self.canvas.after(50)
-        # self.draw()
 
 root = Tk()
 app = triangulation(master=root)
