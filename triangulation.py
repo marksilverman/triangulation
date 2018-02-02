@@ -77,8 +77,20 @@ class triangulation(Frame):
         node.toggle(RIGHT)
         self.draw()
 
+    def rotate(self):
+        if (self.row_list == self.a_rows):
+            self.row_list = self.b_rows
+        elif (self.row_list == self.b_rows):
+            self.row_list = self.c_rows
+        else:
+            self.row_list = self.a_rows
+        self.draw()
+
     def key(self, event):
         k = repr(event.keysym)
+        if (k == "'r'"):
+            self.rotate()
+            return
         if (k == "'q'"): self.quit()
         if (k == "'n'"): self.new()
         if (k == "'o'"): self.open()
@@ -86,7 +98,6 @@ class triangulation(Frame):
         if (k == "'i'"): self.insert()
         if (k == "'s'"): self.save()
         if (k == "'p'"): self.play()
-        if (k == "'r'"): self.draw()
         if (k == "'l'"):
             msg = "triangulation"
             for i in range(0, len(msg)):
@@ -146,13 +157,13 @@ class triangulation(Frame):
         self.draw()
 
     def more_rows(self):
-        self.rows += 1
-        self.tv_rows.set(str(self.rows))
+        self.row_cnt += 1
+        self.tv_rows.set(str(self.row_cnt))
         self.new()
 
     def fewer_rows(self):
-        self.rows -= 1
-        self.tv_rows.set(str(self.rows))
+        self.row_cnt -= 1
+        self.tv_rows.set(str(self.row_cnt))
         self.new()
 
     def createWidgets(self):
@@ -163,9 +174,9 @@ class triangulation(Frame):
         self.row_label = Label(self)
         self.row_label["text"] = "rows:"
         self.row_label.pack({"side": "left"})
-        self.rows = 12
+        self.row_cnt = 12
         self.tv_rows = StringVar()
-        self.tv_rows.set(str(self.rows))
+        self.tv_rows.set(str(self.row_cnt))
         self.row_count = Label(self)
         self.row_count["textvariable"] = self.tv_rows
         self.row_count.pack({"side": "left"})
@@ -198,6 +209,10 @@ class triangulation(Frame):
         self.error_button["command"] = self.show_errors
         self.error_button.pack({"side": "left"})
 
+        self.error_button = Button(self, text="rotate")
+        self.error_button["command"] = self.rotate
+        self.error_button.pack({"side": "left"})
+
         self.canvas = Canvas(self.master, width=canvas_width, height=canvas_height, bg='navajo white')
         self.canvas.pack({"side": "left"})
 
@@ -211,6 +226,7 @@ class triangulation(Frame):
         self.right_arrow = PhotoImage(file="right arrow.gif")
         self.up_left_arrow = PhotoImage(file="up left arrow.gif")
         self.down_left_arrow = PhotoImage(file="down left arrow.gif")
+        self.row_list = None
         self.new()
 
     def play(self):
@@ -229,29 +245,84 @@ class triangulation(Frame):
         self.winner = False
         triangulation.play_mode = False
         self.hide = False
-        self.cursor = self.top = new_node = parent_node = triangle()
-        for row_idx in range(1, self.rows):
+        self.cursor = self.top = node = parent_node = triangle()
+        self.a_rows = [None for x in range(self.row_cnt)]
+        self.a_rows[0] = [node]
+        for row_idx in range(1, self.row_cnt):
             prev_node = None
             node_cnt = 1 + row_idx * 2
+            self.a_rows[row_idx] = [None for x in range(node_cnt)]
             for node_idx in range(0, node_cnt):
-                new_node = triangle()
+                node = triangle()
+                self.a_rows[row_idx][node_idx] = node
 
                 if (node_idx % 2):
-                    new_node.dir = DOWN
+                    node.dir = DOWN
                 else:
-                    new_node.dir = UP
+                    node.dir = UP
                 if (node_idx == 0):
-                    start_of_current_row = new_node
+                    start_of_current_row = node
                 if (prev_node):
-                    prev_node.right = new_node
-                    new_node.left = prev_node
-                prev_node = new_node
+                    prev_node.right = node
+                    node.left = prev_node
+                prev_node = node
 
                 if (node_idx > 0 and node_idx < (node_cnt- 1)):
-                    new_node.parent = parent_node
-                    parent_node.child = new_node
+                    node.parent = parent_node
+                    parent_node.child = node
                     parent_node = parent_node.right
             parent_node = start_of_current_row;
+        
+        self.row_list = self.a_rows
+        # b starts at the SE corner, rows goes NE to SW
+        self.b_rows = [None for x in range(self.row_cnt)]
+        node = self.top
+        row_idx = self.row_cnt - 1
+        while(row_idx >= 0):
+            node_idx = 0
+            node_cnt = 1 + row_idx * 2
+            self.b_rows[row_idx] = [None for x in range(node_cnt)]
+            start_of_row = node
+            dir = DOWN
+            while(node):
+                self.b_rows[row_idx][node_idx] = node
+                node_idx += 1
+                if (dir == DOWN):
+                    node = node.child
+                    dir = LEFT
+                elif (dir == LEFT):
+                    node = node.left
+                    dir = DOWN
+            node = start_of_row
+            node = node.child
+            if (node): node = node.right
+            dir = DOWN
+            row_idx -= 1
+
+        self.c_rows = [None for x in range(self.row_cnt)]
+        node = self.top
+        row_idx = self.row_cnt - 1
+        while(row_idx >= 0):
+            node_cnt = 1 + row_idx * 2
+            node_idx = node_cnt - 1
+            self.c_rows[row_idx] = [None for x in range(node_cnt)]
+            start_of_row = node
+            dir = DOWN
+            while(node):
+                self.c_rows[row_idx][node_idx] = node
+                node_idx -= 1
+                if (dir == DOWN):
+                    node = node.child
+                    dir = RIGHT
+                elif (dir == RIGHT):
+                    node = node.right
+                    dir = DOWN
+            node = start_of_row
+            node = node.child
+            if (node): node = node.left
+            dir = DOWN
+            row_idx -= 1
+
         self.draw()
     
     # clears the state but not the answer flag
@@ -333,15 +404,15 @@ class triangulation(Frame):
             self.canvas.create_text(100, 50, text="play mode", font="12x24", tags="text")
         else:
             self.canvas.create_text(100, 50, text="design mode", font="12x24", tags="text")
-        node = self.top
+        
         total_cnt = 0
-        for row_idx in range(0, self.rows):
-            node_idx = cnt = left_col_idx = alt_left_col_idx = 0
+        for row_idx in range(0, len(self.row_list)):
+            node_list = self.row_list[row_idx]
+            cnt = left_col_idx = alt_left_col_idx = 0
             right_col_idx = alt_right_col_idx = row_idx
-            start_of_row = node
-            node.dir = UP
-            
-            while (node):
+
+            for node_idx in range(0, len(node_list)):
+                node = node_list[node_idx]
                 node.xleft = center_x - length - (half_length * (row_idx + 1)) + (half_length * node_idx)
                 node.ybottom = (row_idx + 2) * altitude
                 node.xright = node.xleft + length
@@ -352,23 +423,17 @@ class triangulation(Frame):
                 if (node.answer == True):
                     cnt += 1
                     total_cnt += 1
-                
+
                 if (triangulation.play_mode == True and
                     (node.answer == True and node.state != FILLED) or (node.answer == False and node.state == FILLED)):
                     self.winner = False
 
+                color = "ivory"
                 if (node.state == FILLED):
                     color = "medium sea green"
-                    if (self.play_mode == True):
-                        cnt -= 1
-                elif (node.state == UNFILLED):
-                    if (self.play_mode):
-                        color = "ivory"
-                    else:
-                        color = "lavender"
-                elif (node.state == FROZEN):
-                    color = "lightblue"
-
+                    if (self.play_mode == True): cnt -= 1
+                elif (node.state == UNFILLED and self.play_mode): color = "lavender"
+                elif (node.state == FROZEN): color = "lightblue"
                 if (self.hide == True): color = "white"
 
                 mytags = ["all"]
@@ -386,19 +451,14 @@ class triangulation(Frame):
                     node.xy = ((node.xleft, node.ybottom), (node.xright, node.ybottom), (node.xmiddle, node.ytop))
                     mytags.append("uptriangle")
                     node.draw(self.canvas, color, mytags)
-                    node = node.right
-                    if (node): node.dir = DOWN
                     right_col_idx -= 1
                     alt_left_col_idx += 1
                 else:
                     node.xy = ((node.xleft, node.ytop), (node.xright, node.ytop), (node.xmiddle, node.ybottom))
                     mytags.append("downtriangle")
                     node.draw(self.canvas, color, mytags)
-                    node = node.right
-                    if (node): node.dir = UP
                     left_col_idx += 1
                     alt_right_col_idx -= 1
-                node_idx += 1
 
             color = "black"
             if (cnt < 0): color = "tomato"
@@ -406,8 +466,6 @@ class triangulation(Frame):
             self.canvas.create_text(center_x - 1.3 * length - (half_length * (row_idx + 1)),
                                     (row_idx + 2) * altitude - (altitude/2),
                                     fill=color, text=cnt, font="12x24", tags="text")
-            node = start_of_row.child
-            if (node): node = node.left
 
         #self.canvas.tag_bind("all", "<Button-1>", self.left_click)
         #self.canvas.tag_bind("all", "<Button-3>", self.right_click)
@@ -422,62 +480,44 @@ class triangulation(Frame):
             return
 
         # calculate the totals on the right
-        node = self.top
-        for row_idx in range(0, self.rows):
+        if (self.row_list == self.a_rows): next_list = self.b_rows
+        elif (self.row_list == self.b_rows): next_list = self.c_rows
+        else: next_list = self.a_rows
+        for row_idx in range(0, len(next_list)):
+            node_list = next_list[len(next_list) - row_idx - 1]
             cnt = 0
-            dir = DOWN
-            start_of_row = node
-            while (node):
+            for node_idx in range(0, len(node_list)):
+                node = node_list[node_idx]
                 if (node.answer): cnt += 1
                 if (node.state == FILLED and self.play_mode == True): cnt -= 1
-                if (dir == DOWN):
-                    node = node.child
-                    dir = LEFT
-                else:
-                    node = node.left
-                    dir = DOWN
             color = "black"
-            if (cnt < 0):
-                color = "tomato"
-            elif (cnt == 0):
-                color = "darkgreen"
+            if (cnt < 0): color = "tomato"
+            elif (cnt == 0): color = "darkgreen"
             self.canvas.create_text(center_x - length + (half_length * (row_idx + 1)),
                                     (row_idx + 2) * altitude - (altitude),
                                     fill=color, text=cnt, font="12x24", tags="text")
-            node = start_of_row.child
-            if (node):
-                node = node.right
 
         # calculate the totals along the bottom
-        node = self.top
-        for row_idx in range(0, self.rows):
+        if (next_list == self.a_rows): next_list = self.b_rows
+        elif (next_list == self.b_rows): next_list = self.c_rows
+        else: next_list = self.a_rows
+        for row_idx in range(0, len(next_list)):
+            node_list = next_list[len(next_list) - row_idx - 1]
             cnt = 0
-            dir = DOWN
-            start_of_row = node
-            while (node):
+            for node_idx in range(0, len(node_list)):
+                node = node_list[len(node_list) - node_idx - 1]
                 if (node.answer): cnt += 1
                 if (node.state == FILLED and self.play_mode == True): cnt -= 1
-                if (dir == DOWN):
-                    node = node.child
-                    dir = RIGHT
-                else:
-                    node = node.right
-                    dir = DOWN
-            color = "black"
-            if (cnt < 0):
-                color = "tomato"
-            elif (cnt == 0):
-                color = "darkgreen"
-            self.canvas.create_text(center_x - (half_length/2) + self.rows * half_length - (length * (row_idx + 1)),
-                                    (self.rows + 2) * altitude - (altitude / 2),
+                color = "black"
+            if (cnt < 0): color = "tomato"
+            elif (cnt == 0): color = "darkgreen"
+            self.canvas.create_text(center_x - (half_length/2) + self.row_cnt * half_length - (length * (row_idx + 1)),
+                                    (self.row_cnt + 2) * altitude - (altitude / 2),
                                     fill=color, text=cnt, font="12x24", tags="text")
-            node = start_of_row.child
-            if (node):
-                node = node.left
 
-        self.canvas.create_image(center_x - (half_length * self.rows / 2) - 130, self.rows * altitude / 2, image=self.right_arrow)
-        self.canvas.create_image(center_x + (half_length * self.rows / 2) + 30, ((self.rows - 1) * altitude / 2) - altitude / 2, image=self.down_left_arrow)
-        self.canvas.create_image(center_x - 15, (self.rows + 3) * altitude, image=self.up_left_arrow)
+        self.canvas.create_image(center_x - (half_length * self.row_cnt / 2) - 130, self.row_cnt * altitude / 2, image=self.right_arrow)
+        self.canvas.create_image(center_x + (half_length * self.row_cnt / 2) + 30, ((self.row_cnt - 1) * altitude / 2) - altitude / 2, image=self.down_left_arrow)
+        self.canvas.create_image(center_x - 15, (self.row_cnt + 3) * altitude, image=self.up_left_arrow)
 
         self.canvas.create_text(100, 150, text="total shaded triangles: " + str(total_cnt), font="12x24", tags="text")
 
@@ -510,21 +550,21 @@ class triangulation(Frame):
         f = open(filename, 'r')
 
         triangle.next_id = 0
-        self.rows = 0
+        self.row_cnt = 0
         start_of_row = None
         for line in f:
             triangle_list = line.split()
             triangle_cnt = len(triangle_list)
             if (triangle_cnt == 0):
                 break
-            self.rows = self.rows + 1
+            self.row_cnt = self.row_cnt + 1
             parent_node = start_of_row
             prev_node = None
             for triangle_idx in range(triangle_cnt):
                 node = triangle()
                 if (triangle_idx == 0):
                     start_of_row = node
-                    if (self.rows == 1):
+                    if (self.row_cnt == 1):
                         self.top = self.cursor = node
                 else:
                     node.left = prev_node
@@ -668,24 +708,24 @@ class triangulation(Frame):
             self.canvas.after(50)
 
         # random wipes
-        for j in range(0, self.rows):
+        for j in range(0, self.row_cnt):
             for i in range(0, 3):
                 if (i == 0): mytags = "row"
                 elif (i == 1): mytags = "left_col"
                 elif (i == 2): mytags = "right_col"
                 color = "#" + format(int(random.randint(0, 0xFFFFFF)), '06x')
-                self.canvas.itemconfig(mytags + str(random.randint(0, self.rows)), fill=color)
+                self.canvas.itemconfig(mytags + str(random.randint(0, self.row_cnt)), fill=color)
                 self.canvas.update_idletasks()
                 self.canvas.after(50)
 
         # row wipes
         mytags = "row"
         for i in range(0, 2):
-            for j in range(0, self.rows):
+            for j in range(0, self.row_cnt):
                 if (i == 0):
                     self.canvas.itemconfig(mytags + str(j), fill=random_color())
                 else:
-                    self.canvas.itemconfig(mytags + str(self.rows - j - 1), fill=random_color())
+                    self.canvas.itemconfig(mytags + str(self.row_cnt - j - 1), fill=random_color())
                 self.canvas.update_idletasks()
                 self.canvas.after(50)
 
@@ -696,11 +736,11 @@ class triangulation(Frame):
                 elif (j == 1): mytags = "alt_left_col"
                 elif (j == 2): mytags = "right_col"
                 elif (j == 3): mytags = "alt_right_col"
-                for k in range(0, self.rows):
+                for k in range(0, self.row_cnt):
                     if (i == 0):
                         self.canvas.itemconfig(mytags + str(k), fill=random_color())
                     else:
-                        self.canvas.itemconfig(mytags + str(self.rows - k - 1), fill=random_color())
+                        self.canvas.itemconfig(mytags + str(self.row_cnt - k - 1), fill=random_color())
                     self.canvas.update_idletasks()
                     self.canvas.after(50)
 
