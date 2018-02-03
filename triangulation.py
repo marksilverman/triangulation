@@ -5,6 +5,7 @@ from tkinter import *
 from tkinter import filedialog
 import math
 import random
+from enum import Enum
 
 length = 40
 altitude = length * math.sqrt(3) / 2.0
@@ -18,19 +19,21 @@ DOWN = 1
 LEFT = 2
 RIGHT = 3
 
-UNFILLED = 0
-FILLED = 1
-FROZEN = 2
+class state(Enum):
+    empty = 0
+    filled = 1
+    frozen = 2
 
 def random_color():
     return "#" + format(int(random.randint(0, 0xFFFFFF)), '06x')
 
 class triangle():
     next_id = 0
+
     def __init__(self):
         self.parent = self.child = self.left = self.right = None
         self.xleft = self.xright = self.xmiddle = self.ybottom = self.ytop = 0
-        self.state = UNFILLED
+        self.state = state.empty
         self.answer = False
         self.dir = UP
         self.xy = None
@@ -45,17 +48,17 @@ class triangle():
 
     def toggle(self, which=LEFT):
         if (which == LEFT):
-            if  (self.state == FILLED):
-                self.state = UNFILLED
+            if  (self.state == state.filled):
+                self.state = state.empty
             else:
-                self.state = FILLED
+                self.state = state.filled
         elif (which == RIGHT):
-            if (self.state == FROZEN):
-                self.state = UNFILLED
+            if (self.state == state.frozen):
+                self.state = state.empty
             else:
-                self.state = FROZEN
+                self.state = state.frozen
         if (triangulation.play_mode == False):
-            if (self.state == FILLED):
+            if (self.state == state.filled):
                 self.answer = 1
             else:
                 self.answer = 0
@@ -240,10 +243,11 @@ class triangulation(Frame):
             self.refill()
         self.draw()
 
+    # create a new pyramid
     def new(self):
         triangle.next_id = 0
         self.winner = False
-        triangulation.play_mode = False
+        self.play_mode = False
         self.hide = False
         self.cursor = self.top = node = parent_node = triangle()
         self.a_rows = [None for x in range(self.row_cnt)]
@@ -273,8 +277,10 @@ class triangulation(Frame):
                     parent_node = parent_node.right
             parent_node = start_of_current_row;
         
+        # row_list is the list of rows at the top of the pyramid
         self.row_list = self.a_rows
-        # b starts at the SE corner, rows goes NE to SW
+
+        # b goes from bottom-right to the top-left
         self.b_rows = [None for x in range(self.row_cnt)]
         node = self.top
         row_idx = self.row_cnt - 1
@@ -328,70 +334,27 @@ class triangulation(Frame):
     # clears the state but not the answer flag
     def clear(self):
         self.winner = False
-        self.cursor = node = self.top
-        dir = RIGHT
-        while(node):
-            node.state = UNFILLED
-            if (dir == RIGHT):
-               if (node.right):
-                    node = node.right
-               else:
-                    node = node.child
-                    if (node): node = node.right
-                    dir = LEFT
-            elif (dir == LEFT):
-                if (node.left):
-                    node = node.left
-                else:
-                    node = node.child
-                    if (node): node = node.left
-                    dir = RIGHT
+        for row_idx in range(0, self.row_cnt):
+            for node_idx in range(0, len(self.row_list[row_idx])):
+                self.row_list[row_idx][node_idx].state = state.empty
 
     def show_errors(self):
-        self.cursor = node = self.top
-        dir = RIGHT
-        while(node):
-            if ((node.answer == True and node.state != FILLED) or (node.answer == False and node.state == FILLED)):
-                self.canvas.create_oval(node.xleft+18, node.ytop+15,
-                                       node.xright-18, node.ybottom-15, fill="tomato", outline="tomato")
-            if (dir == RIGHT):
-               if (node.right):
-                    node = node.right
-               else:
-                    node = node.child
-                    if (node): node = node.right
-                    dir = LEFT
-            elif (dir == LEFT):
-                if (node.left):
-                    node = node.left
-                else:
-                    node = node.child
-                    if (node): node = node.left
-                    dir = RIGHT
+        for row_idx in range(0, self.row_cnt):
+            for node_idx in range(0, len(self.row_list[row_idx])):
+                node = self.row_list[row_idx][node_idx]
+                if ((node.answer == True and node.state != state.filled) or
+                    (node.answer == False and node.state == state.filled)):
+                    self.canvas.create_oval(node.xleft+18, node.ytop+15, node.xright-18, node.ybottom-15, fill="tomato", outline="tomato")
 
     # sets the fill state based on the answer flag
     def refill(self):
-        node = self.top
-        dir = RIGHT
-        while(node):
-            if (node.answer == True):
-                node.state = FILLED
-            else:
-                node.state = UNFILLED
-            if (dir == RIGHT):
-               if (node.right):
-                    node = node.right
-               else:
-                    node = node.child
-                    if (node): node = node.right
-                    dir = LEFT
-            elif (dir == LEFT):
-                if (node.left):
-                    node = node.left
+        for row_idx in range(0, self.row_cnt):
+            for node_idx in range(0, len(self.row_list[row_idx])):
+                node = self.row_list[row_idx][node_idx]
+                if (node.answer == True):
+                    node.state = state.filled
                 else:
-                    node = node.child
-                    if (node): node = node.left
-                    dir = RIGHT
+                    node.state = state.empty
 
     def draw(self):
         if (self.winner):
@@ -406,7 +369,7 @@ class triangulation(Frame):
             self.canvas.create_text(100, 50, text="design mode", font="12x24", tags="text")
         
         total_cnt = 0
-        for row_idx in range(0, len(self.row_list)):
+        for row_idx in range(0, self.row_cnt):
             node_list = self.row_list[row_idx]
             cnt = left_col_idx = alt_left_col_idx = 0
             right_col_idx = alt_right_col_idx = row_idx
@@ -425,15 +388,15 @@ class triangulation(Frame):
                     total_cnt += 1
 
                 if (triangulation.play_mode == True and
-                    (node.answer == True and node.state != FILLED) or (node.answer == False and node.state == FILLED)):
+                    (node.answer == True and node.state != state.filled) or (node.answer == False and node.state == state.filled)):
                     self.winner = False
 
                 color = "ivory"
-                if (node.state == FILLED):
+                if (node.state == state.filled):
                     color = "medium sea green"
                     if (self.play_mode == True): cnt -= 1
-                elif (node.state == UNFILLED and self.play_mode): color = "lavender"
-                elif (node.state == FROZEN): color = "lightblue"
+                elif (node.state == state.empty and self.play_mode): color = "lavender"
+                elif (node.state == state.frozen): color = "lightblue"
                 if (self.hide == True): color = "white"
 
                 mytags = ["all"]
@@ -489,7 +452,7 @@ class triangulation(Frame):
             for node_idx in range(0, len(node_list)):
                 node = node_list[node_idx]
                 if (node.answer): cnt += 1
-                if (node.state == FILLED and self.play_mode == True): cnt -= 1
+                if (node.state == state.filled and self.play_mode == True): cnt -= 1
             color = "black"
             if (cnt < 0): color = "tomato"
             elif (cnt == 0): color = "darkgreen"
@@ -507,7 +470,7 @@ class triangulation(Frame):
             for node_idx in range(0, len(node_list)):
                 node = node_list[len(node_list) - node_idx - 1]
                 if (node.answer): cnt += 1
-                if (node.state == FILLED and self.play_mode == True): cnt -= 1
+                if (node.state == state.filled and self.play_mode == True): cnt -= 1
                 color = "black"
             if (cnt < 0): color = "tomato"
             elif (cnt == 0): color = "darkgreen"
@@ -523,61 +486,55 @@ class triangulation(Frame):
 
     def insert(self):
         node = self.cursor
-        node.state = FILLED
+        node.state = state.filled
         if (node.dir == DOWN):
             if (node.parent and node.parent.left and node.parent.right):
-                node.parent.state = node.parent.left.state = node.parent.right.state = FILLED
+                node.parent.state = node.parent.left.state = node.parent.right.state = state.filled
             elif (node.parent and node.left and node.right):
-                node.parent.state = node.left.state = node.right.state = FILLED
+                node.parent.state = node.left.state = node.right.state = state.filled
             elif (node.right and node.right.right and node.right.parent):
-                node.right.state = node.right.right.state = node.right.parent.state = FILLED
+                node.right.state = node.right.right.state = node.right.parent.state = state.filled
             elif (node.left and node.left.left and node.left.parent):
-                node.left.state = node.left.left.state = node.left.parent.state = FILLED
+                node.left.state = node.left.left.state = node.left.parent.state = state.filled
         elif (node.dir == UP):
             if (node.child and node.child.left and node.child.right):
-                node.child.state = node.child.left.state = node.child.right.state = FILLED
+                node.child.state = node.child.left.state = node.child.right.state = state.filled
             elif (node.child and node.left and node.right):
-                node.child.state = node.left.state = node.right.state = FILLED
+                node.child.state = node.left.state = node.right.state = state.filled
             elif (node.right and node.right.right and node.right.parent):
-                node.right.state = node.right.right.state = node.right.parent.state = FILLED
+                node.right.state = node.right.right.state = node.right.parent.state = state.filled
             elif (node.left and node.left.left and node.left.parent):
-                node.left.state = node.left.left.state = node.left.parent.state = FILLED
+                node.left.state = node.left.left.state = node.left.parent.state = state.filled
 
     def open(self):
-        self.canvas.delete("all")
-
         filename = filedialog.askopenfilename(initialdir = ".", filetypes = (("text","*.txt"), ("all files","*.*")))
         f = open(filename, 'r')
-
+        data = list(f)
+        if (len(data) != self.row_cnt):
+            self.row_cnt = len(data)
+            self.new()
         triangle.next_id = 0
-        self.row_cnt = 0
-        start_of_row = None
-        for line in f:
-            triangle_list = line.split()
-            triangle_cnt = len(triangle_list)
-            if (triangle_cnt == 0):
-                break
-            self.row_cnt = self.row_cnt + 1
-            parent_node = start_of_row
-            prev_node = None
-            for triangle_idx in range(triangle_cnt):
-                node = triangle()
-                if (triangle_idx == 0):
-                    start_of_row = node
-                    if (self.row_cnt == 1):
-                        self.top = self.cursor = node
-                else:
-                    node.left = prev_node
-                    prev_node.right = node
-                    if (triangle_idx < triangle_cnt - 1):
-                        node.parent = parent_node
-                        parent_node.child = node
-                        parent_node = parent_node.right
-                s = triangle_list[triangle_idx]
-                if (s == 'X'): node.answer = True
-                prev_node = node
+        for ridx in range(0, self.row_cnt):
+            line = data[ridx]
+            node_list = line.split()
+            node_cnt = len(node_list)
+            for nidx in range(node_cnt):
+                node = self.row_list[ridx][nidx]
+                if (node_list[nidx] == 'X'): node.answer = True
         triangulation.play_mode = True
         self.draw()
+
+    def save(self):
+        filename = filedialog.asksaveasfilename(initialdir = ".", filetypes = (("text","*.txt"), ("all files","*.*")))
+        f = open(filename, 'w')
+        for ridx in range(0, self.row_cnt):
+            for nidx in range(0, len(self.row_list[ridx])):
+                if (self.row_list[ridx][nidx].state == state.filled):
+                    f.write(" X")
+                else:
+                    f.write(" .")
+            if (ridx < self.row_cnt - 1): f.write("\n")
+        f.close()
 
     def scroll(self, letter):
         f = open(letter + ".txt", 'r')
@@ -588,26 +545,26 @@ class triangulation(Frame):
         letter_top = None
         for line in f:
             more_rows += 1
-            triangle_list = line.split()
-            triangle_cnt = len(triangle_list)
-            if (triangle_cnt == 0):
+            node_list = line.split()
+            node_cnt = len(node_list)
+            if (node_cnt == 0):
                 break
             parent_node = start_of_row
             prev_node = None
-            for triangle_idx in range(triangle_cnt):
+            for nidx in range(node_cnt):
                 node = triangle()
-                if (triangle_idx == 0):
+                if (nidx == 0):
                     start_of_row = node
                     if (more_rows == 1):
                         letter_top = node
                 else:
                     node.left = prev_node
                     prev_node.right = node
-                    if (triangle_idx < triangle_cnt - 1):
+                    if (nidx < node_cnt - 1):
                         node.parent = parent_node
                         parent_node.child = node
                         parent_node = parent_node.right
-                s = triangle_list[triangle_idx]
+                s = node_list[nidx]
                 if (s == 'X'): node.answer = True
                 prev_node = node
         node = self.top
@@ -661,23 +618,6 @@ class triangulation(Frame):
                 letter_node = None
         self.canvas.update_idletasks()
         self.canvas.after(100)
-
-    def save(self):
-        filename = filedialog.asksaveasfilename(initialdir = ".", filetypes = (("text","*.txt"), ("all files","*.*")))
-        f = open(filename, 'w')
-        node = self.top
-        start_of_row = node
-        while (node):
-            if (node.state == FILLED):
-                f.write(" X")
-            else:
-                f.write(" .")
-            node = node.right
-            if (node == None and start_of_row and start_of_row.child and start_of_row.child.left):
-                node = start_of_row.child.left
-                start_of_row = node
-                f.write("\n")
-        f.close()
 
     # winner, winner
     def chicken_dinner(self):
