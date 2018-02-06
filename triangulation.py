@@ -247,7 +247,7 @@ class triangulation(Frame):
     def new(self):
         triangle.next_id = 0
         self.winner = False
-        self.play_mode = False
+        triangulation.play_mode = False
         self.hide = False
         self.cursor = self.top = node = parent_node = triangle()
         self.a_rows = [None for x in range(self.row_cnt)]
@@ -357,16 +357,14 @@ class triangulation(Frame):
                     node.state = state.empty
 
     def draw(self):
-        if (self.winner):
-            already_won = True
-        else:
-            already_won = False
+        already_won = False
+        if (self.winner): already_won = True
+            
         self.winner = True
         self.canvas.delete("all")
-        if (triangulation.play_mode):
-            self.canvas.create_text(100, 50, text="play mode", font="12x24", tags="text")
-        else:
-            self.canvas.create_text(100, 50, text="design mode", font="12x24", tags="text")
+        msg = "design mode"
+        if (triangulation.play_mode): msg = "play mode"
+        self.canvas.create_text(100, 50, text=msg, font="12x24", tags="text")
         
         total_cnt = 0
         for row_idx in range(0, self.row_cnt):
@@ -388,14 +386,15 @@ class triangulation(Frame):
                     total_cnt += 1
 
                 if (triangulation.play_mode == True and
-                    (node.answer == True and node.state != state.filled) or (node.answer == False and node.state == state.filled)):
+                    (node.answer == True and node.state != state.filled) or
+                    (node.answer == False and node.state == state.filled)):
                     self.winner = False
 
                 color = "ivory"
                 if (node.state == state.filled):
                     color = "medium sea green"
-                    if (self.play_mode == True): cnt -= 1
-                elif (node.state == state.empty and self.play_mode): color = "lavender"
+                    if (triangulation.play_mode == True): cnt -= 1
+                elif (node.state == state.empty and triangulation.play_mode): color = "lavender"
                 elif (node.state == state.frozen): color = "lightblue"
                 if (self.hide == True): color = "white"
 
@@ -452,7 +451,7 @@ class triangulation(Frame):
             for node_idx in range(0, len(node_list)):
                 node = node_list[node_idx]
                 if (node.answer): cnt += 1
-                if (node.state == state.filled and self.play_mode == True): cnt -= 1
+                if (node.state == state.filled and triangulation.play_mode == True): cnt -= 1
             color = "black"
             if (cnt < 0): color = "tomato"
             elif (cnt == 0): color = "darkgreen"
@@ -470,7 +469,7 @@ class triangulation(Frame):
             for node_idx in range(0, len(node_list)):
                 node = node_list[len(node_list) - node_idx - 1]
                 if (node.answer): cnt += 1
-                if (node.state == state.filled and self.play_mode == True): cnt -= 1
+                if (node.state == state.filled and triangulation.play_mode == True): cnt -= 1
                 color = "black"
             if (cnt < 0): color = "tomato"
             elif (cnt == 0): color = "darkgreen"
@@ -622,16 +621,16 @@ class triangulation(Frame):
     # winner, winner
     def chicken_dinner(self):
         # the entire pyramid
-        for i in range(0, 4):
+        for i in range(0, 6):
             color = random_color()
             self.canvas.itemconfig("all", fill=color)
             self.canvas.update_idletasks()
             self.canvas.after(50)
 
         # the up and down triangles
-        for i in range(0, 2):
+        for i in range(0, 4):
             for j in range(0, 2):
-                color = "#" + format(int(random.randint(0, 0xFFFFFF)), '06x')
+                color = random_color()
                 if (j == 0): self.canvas.itemconfig("uptriangle", fill=color)
                 elif (j == 1): self.canvas.itemconfig("downtriangle", fill=color)
                 self.canvas.update_idletasks()
@@ -640,7 +639,7 @@ class triangulation(Frame):
         # twinkles
         for i in range(0, 16):
             for j in range(0, 30):
-                color = "#" + format(int(random.randint(0, 0xFFFFFF)), '06x')
+                color = random_color()
                 mytags = "triangle"
                 mytags += str(random.randint(0, triangle.next_id))
                 self.canvas.itemconfig(mytags, fill=color)
