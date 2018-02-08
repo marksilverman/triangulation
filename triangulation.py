@@ -7,9 +7,6 @@ import math
 import random
 from enum import Enum
 
-length = 40
-altitude = length * math.sqrt(3) / 2.0
-half_length = length // 2
 canvas_width = 900
 canvas_height = 700
 center_x = canvas_width // 2
@@ -68,7 +65,7 @@ class triangulation(Frame):
     play_mode = False
 
     def click(self, event):
-        # self.cursor = None
+        self.cursor = None
         self.draw()
 
     def left_click(self, event, node):
@@ -220,11 +217,20 @@ class triangulation(Frame):
 
     def more_rows(self):
         self.rcnt += 1
+        if (self.rcnt == 15):
+            self.length -= 5
+            self.half_length = self.length // 2
+            self.altitude = self.length * math.sqrt(3) / 2.0
         self.tv_rows.set(str(self.rcnt))
         self.new()
 
     def fewer_rows(self):
+        if (self.rcnt < 3): return
         self.rcnt -= 1
+        if (self.rcnt == 15):
+            self.length += 5
+            self.half_length = self.length // 2
+            self.altitude = self.length * math.sqrt(3) / 2.0
         self.tv_rows.set(str(self.rcnt))
         self.new()
 
@@ -291,6 +297,9 @@ class triangulation(Frame):
         self.rlist = None
         self.ridx = 0
         self.cidx = 0
+        self.length = 40
+        self.half_length = self.length // 2
+        self.altitude = self.length * math.sqrt(3) / 2.0
         self.new()
 
     def play(self):
@@ -434,12 +443,12 @@ class triangulation(Frame):
             nlist = self.rlist[ridx]
             for cidx in range(0, len(nlist)):
                 node = nlist[cidx]
-                node.xleft = center_x - length - (half_length * (ridx + 1)) + (half_length * cidx)
-                node.ybottom = (ridx + 2) * altitude
-                node.xright = node.xleft + length
+                node.xleft = center_x - self.length - (self.half_length * (ridx + 1)) + (self.half_length * cidx)
+                node.ybottom = (ridx + 2) * self.altitude
+                node.xright = node.xleft + self.length
                 node.ybottom = node.ybottom
-                node.xmiddle = node.xleft + half_length
-                node.ytop = node.ybottom - altitude
+                node.xmiddle = node.xleft + self.half_length
+                node.ytop = node.ybottom - self.altitude
 
                 if (node == self.cursor):
                     self.ridx = ridx
@@ -489,9 +498,9 @@ class triangulation(Frame):
             color = "black"
             if (cnt < 0): color = "tomato"
             elif (cnt == 0): color = "darkgreen"
-            x = center_x - 1.3 * length - (half_length * (ridx + 1))
-            y = (ridx + 2) * altitude - (altitude/2)
-            if (ridx == self.ridx):
+            x = center_x - 1.3 * self.length - (self.half_length * (ridx + 1))
+            y = (ridx + 2) * self.altitude - (self.altitude/2)
+            if (self.hide == False and self.cursor != None and ridx == self.ridx):
                 self.canvas.create_oval(x-12, y-12, x+12, y+12, fill='gold', tags="text")
             self.canvas.create_text(x, y, fill=color, text=cnt, font="12x24", tags="text")
 
@@ -521,9 +530,9 @@ class triangulation(Frame):
             color = "black"
             if (cnt < 0): color = "tomato"
             elif (cnt == 0): color = "darkgreen"
-            x = center_x - length + (half_length * (ridx + 1))
-            y =  (ridx + 2) * altitude - (altitude)
-            if (this_one):
+            x = center_x - self.length + (self.half_length * (ridx + 1))
+            y =  (ridx + 2) * self.altitude - (self.altitude)
+            if (self.hide == False and this_one):
                 self.canvas.create_oval(x-12, y-12, x+12, y+12, fill='gold')
             self.canvas.create_text(x, y, fill=color, text=cnt, font="12x24", tags="text")
 
@@ -544,15 +553,15 @@ class triangulation(Frame):
                 color = "black"
             if (cnt < 0): color = "tomato"
             elif (cnt == 0): color = "darkgreen"
-            x = center_x - (half_length/2) + self.rcnt * half_length - (length * (ridx + 1))
-            y = (self.rcnt + 2) * altitude - (altitude / 2)
-            if (this_one):
+            x = center_x - (self.half_length/2) + self.rcnt * self.half_length - (self.length * (ridx + 1))
+            y = (self.rcnt + 2) * self.altitude - (self.altitude / 2)
+            if (self.hide == False and this_one):
                 self.canvas.create_oval(x-12, y-12, x+12, y+12, fill='gold')
             self.canvas.create_text(x, y, fill=color, text=cnt, font="12x24", tags="text")
 
-        self.canvas.create_image(center_x - (half_length * self.rcnt / 2) - 130, self.rcnt * altitude / 2, image=self.right_arrow)
-        self.canvas.create_image(center_x + (half_length * self.rcnt / 2) + 30, ((self.rcnt - 1) * altitude / 2) - altitude / 2, image=self.down_left_arrow)
-        self.canvas.create_image(center_x - 15, (self.rcnt + 3) * altitude, image=self.up_left_arrow)
+        self.canvas.create_image(center_x - (self.half_length * self.rcnt / 2) - 130, self.rcnt * self.altitude / 2, image=self.right_arrow)
+        self.canvas.create_image(center_x + (self.half_length * self.rcnt / 2) + 30, ((self.rcnt - 1) * self.altitude / 2) - self.altitude / 2, image=self.down_left_arrow)
+        self.canvas.create_image(center_x - 15, (self.rcnt + 3) * self.altitude, image=self.up_left_arrow)
 
         self.canvas.create_text(100, 150, text="total shaded triangles: " + str(total_cnt), font="12x24", tags="text")
 
