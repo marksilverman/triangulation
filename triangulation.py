@@ -142,10 +142,10 @@ class triangulation(Frame):
 
     def key(self, event):
         k = repr(event.keysym)
+        # print(k)
         if (k == "'r'"):
             self.rotate()
             return
-
         if (k == "'F1'"): self.solve()
         if (k == "'q'"): self.quit()
         if (k == "'n'"): self.new()
@@ -163,35 +163,23 @@ class triangulation(Frame):
            else: self.hide = True
         if (k == "'equal'" or k == "'plus'"): self.more_rows()
         if (k == "'minus'" or k == "'underscore'"): self.fewer_rows()
-  
-        if (k == "'7'"):
-            if (self.cursor == None): self.cursor = self.top
-            if (self.cursor.dir == UP and self.cursor.left): self.cursor = self.cursor.left
-            elif (self.cursor.dir == DOWN and self.cursor.parent): self.cursor = self.cursor.parent
-        if (k == "'9'"):
-            if (self.cursor == None): self.cursor = self.top
-            if (self.cursor.dir == UP and self.cursor.right): self.cursor = self.cursor.right
-            elif (self.cursor.dir == DOWN and self.cursor.parent): self.cursor = self.cursor.parent
-        if (k == "'1'"):
-            if (self.cursor == None): self.cursor = self.top
-            if (self.cursor.dir == UP and self.cursor.child): self.cursor = self.cursor.child
-            elif (self.cursor.dir == DOWN and self.cursor.left): self.cursor = self.cursor.left
-        if (k == "'3'"):
-            if (self.cursor == None): self.cursor = self.top
-            if (self.cursor.dir == UP and self.cursor.child): self.cursor = self.cursor.child
-            elif (self.cursor.dir == DOWN and self.cursor.right): self.cursor = self.cursor.right
+        if (k == "'Home'" or k == "'Prior'"): self.cursor = self.top
+        if (k == "'End'" or k == "'Next'"): self.cursor = self.rlist[self.rcnt-1][self.cidx+self.rcnt-self.ridx-1]
+
         if (k == "'Left'" or k == "'4'"):
             if (self.cidx > 0):
                 self.cidx -= 1
             else:
                 self.cidx = len(self.rlist[self.ridx]) - 1
             self.cursor = self.rlist[self.ridx][self.cidx]
+
         if (k == "'Right'" or k == "'6'"):
             if (self.cidx < (len(self.rlist[self.ridx]) - 1)):
                 self.cidx += 1
             else:
                 self.cidx = 0
             self.cursor = self.rlist[self.ridx][self.cidx]
+
         if (k == "'Up'" or k == "'8'"):
             if (self.ridx > 0):
                 if (self.cidx == 0):
@@ -202,6 +190,7 @@ class triangulation(Frame):
                     self.ridx -= 1
                     self.cidx -= 1
                 self.cursor = self.rlist[self.ridx][self.cidx]
+
         if (k == "'Down'" or k == "'2'"):
             if (self.ridx < (self.rcnt - 1)):
                 self.ridx += 1
@@ -453,6 +442,10 @@ class triangulation(Frame):
                 if (node == self.cursor):
                     self.ridx = ridx
                     self.cidx = cidx
+                    msg = "row " + str(ridx+1)
+                    self.canvas.create_text(800, 50, text=msg, font="12x24", tags="text")
+                    msg = "column " + str(cidx+1)
+                    self.canvas.create_text(800, 80, text=msg, font="12x24", tags="text")
 
                 if (node.answer == True):
                     cnt += 1
@@ -600,20 +593,27 @@ class triangulation(Frame):
             ccnt = len(nlist)
             for cidx in range(ccnt):
                 node = self.rlist[ridx][cidx]
-                if (nlist[cidx] == 'X'): node.answer = True
-                else: node.answer = False
+                if (nlist[cidx][:1] == 'X'): node.answer = True
+                if (nlist[cidx][-1:] == 'f'): node.state = state.filled
+                if (nlist[cidx][-1:] == '!'): node.state = state.frozen
         triangulation.play_mode = True
         self.draw()
 
+    # X - answer
+    # f - filled
+    # ! - frozen
+    # . - empty
     def save(self):
         filename = filedialog.asksaveasfilename(initialdir = ".", filetypes = (("text","*.txt"), ("all files","*.*")))
         f = open(filename, 'w')
         for ridx in range(0, self.rcnt):
             for cidx in range(0, len(self.rlist[ridx])):
-                if (self.rlist[ridx][cidx].state == state.filled):
-                    f.write(" X")
-                else:
-                    f.write(" .")
+                node = self.rlist[ridx][cidx]
+                f.write(" ")
+                if (node.answer): f.write("X")
+                if (node.state == state.filled): f.write("f")
+                elif (node.state == state.frozen): f.write("!")
+                elif (node.state == state.empty): f.write(".")
             if (ridx < self.rcnt - 1): f.write("\n")
         f.close()
 

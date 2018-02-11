@@ -1,0 +1,72 @@
+walkthrough for "giant hard.txt"
+15 rows
+
+1) nothing to fill on the 1st row, so freeze the top-most triangle
+2) one triangle to fill on row 2
+   we don't know which one but it must point up (so it can continue down)
+   that means you can freeze the down-triangle (r2c2)
+4) that leaves two possible triangles
+   one of them starts a pyramid which must continue down
+   whichever one it is, it will include r3c3, so fill it in
+5) row #4 has five triangles to fill
+   they must connect to the pyramid from rows #2 and #3
+   we don't know exactly where they go
+   but r4c3 to r4c5 must be part of it, so fill them in
+6) same logic for r5c3 to r5c7 and r6c3 to r6c10
+7) row #7 has only one triangle to fill
+   so it can't be connected to the pyramid we've been working on
+   and it must continue down
+   the only candidates are c1 and c13, so freeze r7c2 to r7c12
+8) row #8 has five triangles to shade
+   three will connect to the top on row #7
+   two must be new pyramids so they will point up
+   but we don't know where they go yet
+   so 'r'otate the board
+9) the first three rows can be filled and the 4th can be frozen
+10) fill the two-row triangle on the bottom-right corner
+    then freeze the column on its left
+11) look at the bottom row (#15)
+    it's divided into two sections by c12
+	it needs 12 shaded triangles
+	you can't fit all 12 onto the right side
+	so at least one must go on the left side
+	but you can't add just one to the left side
+	it has to continue the entire pyramid
+	so fill in all nine
+	then freeze the outline around that pyramid
+12) 'r'otate twice
+13) the triangle on row #7 can only go in one place
+    add it and add three triangles under it
+14) freeze r8c12, r8c11, and r9c12
+15) row #9 is split into two sides
+    but 11 triangles can't go on the left side
+	so you must fill five triangles on the right side
+16) the pyramid can't continue downward
+    (it would need 7 but only 5 are available)
+    so freeze all around it
+17) rotate twice
+18) freeze r4c1 and r4c7, fill r4c4, freeze r5c5
+19) freeze r13c4 to r13c10
+20) freeze r15c9, fill r14c8
+21) rotate twice
+22) row #5 is split in two
+    three must go on the left side (and you can freeze that pyramid)
+	one up-triangle goes on the right
+	so freeze r5c8, fill r6c9, fill r7c9 to r7c11
+23) freeze the rest of row #8
+24) rotate
+25) row #12, five triangles must go in r12c3 to r12c7
+    then freeze the left side of that pyramid
+	and freeze rows 12 and 13
+26) fill 7 triangles on row 11 (freeze r11c8 and r11c16)
+27) fill that pyramid upwards (it's 4 rows high) and freeze around it
+28) rotate and freeze row #10
+29) fill in little pyramid on row #8 and #9, freeze it
+30) rotate twice
+31) add a pyramid pointing downward with the bottom at r10c6
+32) freeze row #8
+33) fill r7c1 to r7c5, continue pyramid up two rows, freeze right side
+34) rotate and freeze row #13
+35) fill in the down-pyramid on r14c4
+36) rotate twice
+37) fill in final pyramid which starts at r5c7
