@@ -75,7 +75,7 @@ class pyramid(Frame):
                         did_something += 1
         return did_something
 
-    # free any triangles which can't be part of a pyramid
+    # freeze any triangles which can't be part of a pyramid
     def medium_fill(self, rlist):
         did_something = False
         for ridx in range(0, self.rcnt):
@@ -93,45 +93,45 @@ class pyramid(Frame):
                 # see if anything is possible
                 if (node.direction == dir.UP):
                     # see if this triangle is a center
-                    if (child and child.state == state.blank):
+                    if (child and child.state != state.frozen):
                         # look center
-                        if (child.left and child.left.state == state.blank and
-                            child.right and child.right.state == state.blank):
+                        if (child.left and child.left.state != state.frozen and
+                            child.right and child.right.state != state.frozen):
                                 continue
                         # look down
-                        if (left and left.state == state.blank and
-                            right and right.state == state.blank):
+                        if (left and left.state != state.frozen and
+                            right and right.state != state.frozen):
                                 continue
                     # look left
-                    if (left and left.state == state.blank and
-                        left.left and left.left.state == state.blank and
-                        left.parent and left.parent.state == state.blank):
+                    if (left and left.state != state.frozen and
+                        left.left and left.left.state != state.frozen and
+                        left.parent and left.parent.state != state.frozen):
                             continue
 
                     # look right
-                    if (right and right.state == state.blank and
-                        right.right and right.right.state == state.blank and
-                        right.parent and right.parent.state == state.blank):
+                    if (right and right.state != state.frozen and
+                        right.right and right.right.state != state.frozen and
+                        right.parent and right.parent.state != state.frozen):
                             continue
                 elif (node.direction == dir.DOWN):
-                    if (parent and parent.state == state.blank):
+                    if (parent and parent.state != state.frozen):
                         # look center
-                        if (left and left.state == state.blank and
-                            right and right.state == state.blank):
+                        if (left and left.state != state.frozen and
+                            right and right.state != state.frozen):
                                 continue
                         # look up
-                        if (parent.left and parent.left.state == state.blank and
-                            parent.right and parent.right.state == state.blank):
+                        if (parent.left and parent.left.state != state.frozen and
+                            parent.right and parent.right.state != state.frozen):
                                 continue
                     # look left
-                    if (left and left.state == state.blank and
-                        left.left and left.left.state == state.blank and
-                        left.child and left.child.state == state.blank):
+                    if (left and left.state != state.frozen and
+                        left.left and left.left.state != state.frozen and
+                        left.child and left.child.state != state.frozen):
                             continue
                     # look right
-                    if (right and right.state == state.blank and
-                        right.right and right.right.state == state.blank and
-                        right.child and right.child.state == state.blank):
+                    if (right and right.state != state.frozen and
+                        right.right and right.right.state != state.frozen and
+                        right.child and right.child.state != state.frozen):
                             continue
                 # if we reach here there are no possible pyramids with this triangle
                 node.state = state.frozen
