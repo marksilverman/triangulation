@@ -27,6 +27,9 @@ class triangle():
     def freeze(self):
         self.state = state.frozen
 
+    def fill(self):
+        self.state = state.filled
+
     def isFrozen(self):
         return self.state == state.frozen
 

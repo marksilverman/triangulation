@@ -189,28 +189,106 @@ class pyramid(Frame):
             did_something |= self.medium_fill(self.rlist_a, self.count_list_a)
         self.canvas.delete("temp")
     
-    def cleft(self, event):
+    def ctrl_left(self, event):
         self.cidx = 0
         self.cursor = self.rlist[self.ridx][self.cidx]
         self.draw()
     
-    def cright(self, event):
+    def ctrl_right(self, event):
         self.cidx = len(self.rlist[self.ridx])-1
         self.cursor = self.rlist[self.ridx][self.cidx]
         self.draw()
     
-    def cup(self, event):
+    def ctrl_up(self, event):
         while self.cidx > 0 and len(self.rlist[self.ridx-1]) >= self.cidx:
             self.ridx -= 1
             self.cidx -= 1
         self.cursor = self.rlist[self.ridx][self.cidx]
         self.draw()
     
-    def cdown(self, event):
+    def ctrl_down(self, event):
         while (self.ridx < self.rcnt-1):
             self.ridx += 1
             self.cidx += 1
         self.cursor = self.rlist[self.ridx][self.cidx]
+        self.draw()
+
+    def shift_left(self, event):
+        self.cursor.fill()
+        self.cidx -= 1
+        if (self.cidx < 0): self.cidx = len(self.rlist[self.ridx]) - 1
+        self.cursor = self.rlist[self.ridx][self.cidx]
+        self.cursor.fill()
+        self.draw()
+
+    def shift_right(self, event):
+        self.cursor.fill()
+        self.cidx += 1
+        if (self.cidx == len(self.rlist[self.ridx])): self.cidx = 0
+        self.cursor = self.rlist[self.ridx][self.cidx]
+        self.cursor.fill()
+        self.draw()
+
+    def shift_up(self, event):
+        self.cursor.fill()
+        if (self.ridx > 0):
+            if (self.cidx == 0):
+                self.cidx = 1
+            elif (self.cidx == (len(self.rlist[self.ridx]) - 1)):
+                self.cidx -= 1
+            else:
+                self.ridx -= 1
+                self.cidx -= 1
+            self.cursor = self.rlist[self.ridx][self.cidx]
+            self.cursor.fill()
+        self.draw()
+
+    def shift_down(self, event):
+        self.cursor.fill()
+        if (self.ridx < (self.rcnt - 1)):
+            self.ridx += 1
+            self.cidx += 1
+            self.cursor = self.rlist[self.ridx][self.cidx]
+            self.cursor.fill()
+        self.draw()
+
+    def alt_left(self, event):
+        self.cursor.freeze()
+        self.cidx -= 1
+        if (self.cidx < 0): self.cidx = len(self.rlist[self.ridx]) - 1
+        self.cursor = self.rlist[self.ridx][self.cidx]
+        self.cursor.freeze()
+        self.draw()
+
+    def alt_right(self, event):
+        self.cursor.freeze()
+        self.cidx += 1
+        if (self.cidx == len(self.rlist[self.ridx])): self.cidx = 0
+        self.cursor = self.rlist[self.ridx][self.cidx]
+        self.cursor.freeze()
+        self.draw()
+
+    def alt_up(self, event):
+        self.cursor.freeze()
+        if (self.ridx > 0):
+            if (self.cidx == 0):
+                self.cidx = 1
+            elif (self.cidx == (len(self.rlist[self.ridx]) - 1)):
+                self.cidx -= 1
+            else:
+                self.ridx -= 1
+                self.cidx -= 1
+            self.cursor = self.rlist[self.ridx][self.cidx]
+            self.cursor.freeze()
+        self.draw()
+
+    def alt_down(self, event):
+        self.cursor.freeze()
+        if (self.ridx < (self.rcnt - 1)):
+            self.ridx += 1
+            self.cidx += 1
+            self.cursor = self.rlist[self.ridx][self.cidx]
+            self.cursor.freeze()
         self.draw()
 
     def key(self, event):
@@ -362,10 +440,18 @@ class pyramid(Frame):
         self.pack()
         self.createWidgets()
         master.bind("<Key>", self.key)
-        master.bind("<Control-Left>", self.cleft)
-        master.bind("<Control-Right>", self.cright)
-        master.bind("<Control-Up>", self.cup)
-        master.bind("<Control-Down>", self.cdown)
+        master.bind("<Control-Left>", self.ctrl_left)
+        master.bind("<Control-Right>", self.ctrl_right)
+        master.bind("<Control-Up>", self.ctrl_up)
+        master.bind("<Control-Down>", self.ctrl_down)
+        master.bind("<Shift-Left>", self.shift_left)
+        master.bind("<Shift-Right>", self.shift_right)
+        master.bind("<Shift-Up>", self.shift_up)
+        master.bind("<Shift-Down>", self.shift_down)
+        master.bind("<Alt-Left>", self.alt_left)
+        master.bind("<Alt-Right>", self.alt_right)
+        master.bind("<Alt-Up>", self.alt_up)
+        master.bind("<Alt-Down>", self.alt_down)
         self.canvas.bind("<Button-1>", self.click)
         self.canvas.bind("<Button-3>", self.click)
         self.right_arrow = PhotoImage(file="right arrow.gif")
