@@ -34,11 +34,14 @@ class pyramid(Frame):
     def rotate(self):
         if (self.rlist == self.rlist_a):
             self.rlist = self.rlist_b
+            self.count_list = self.count_list_b
         elif (self.rlist == self.rlist_b):
             self.rlist = self.rlist_c
+            self.count_list = self.count_list_c
         else:
             self.rlist = self.rlist_a
-        self.cursor = self.rlist[self.ridx][self.cidx]
+            self.count_list = self.count_list_a
+        # self.cursor = self.rlist[self.ridx][self.cidx]
         self.draw()
 
     # fill in the easy stuff
@@ -76,63 +79,92 @@ class pyramid(Frame):
         return did_something
 
     # freeze any triangles which can't be part of a pyramid
-    def medium_fill(self, rlist):
+    def medium_fill(self, rlist, count_list):
         did_something = False
         for ridx in range(0, self.rcnt):
             nlist = rlist[ridx]
             for nidx in range(0, len(nlist)):
                 node = nlist[nidx]
-                if (node.state != state.blank): continue
-
-                child_left = child_right = parent_left = parent_right = right_right = left_left = None
-                left = node.left
-                right = node.right
-                child = node.child
-                parent = node.parent
+                if (node.isNotBlank()): continue
+                if (count_list[ridx] == 0):
+                    node.freeze()
+                    did_something = True
+                    continue
+                ll = lp = lc = rr = rp = rc = pl = pr = cl = cr = None
+                l = node.left
+                r = node.right
+                c = node.child
+                p = node.parent
+                if (l):
+                    ll = l.left
+                    lp = l.parent
+                    lc = l.child
+                if (r):
+                    rr = r.right
+                    rp = r.parent
+                    rc = r.child
+                if (p):
+                    pl = p.left
+                    pr = p.right
+                if (c):
+                    cl = c.left
+                    cr = c.right
 
                 # see if anything is possible
                 if (node.direction == dir.UP):
-                    # see if this triangle is a center
-                    if (child and child.state != state.frozen):
-                        # look center
-                        if (child.left and child.left.state != state.frozen and
-                            child.right and child.right.state != state.frozen):
-                                continue
-                        # look down
-                        if (left and left.state != state.frozen and
-                            right and right.state != state.frozen):
-                                continue
+                    # look down
+                    if (c and c.isNotFrozen() and (c.isFilled() or count_list[ridx+1] > 0)):
+                        if (l and r and l.isNotFrozen() and r.isNotFrozen()):
+                            need = 0
+                            if (l.isBlank()): need += 1
+                            if (r.isBlank()): need += 1
+                            if (count_list[ridx] >= need): continue
+                        if (cl and cr and cl.isNotFrozen() and cr.isNotFrozen()):
+                           need = 0
+                           if (cl.isBlank()): need += 1
+                           if (cr.isBlank()): need += 1
+                           if (count_list[ridx+1] >= need): continue
                     # look left
-                    if (left and left.state != state.frozen and
-                        left.left and left.left.state != state.frozen and
-                        left.parent and left.parent.state != state.frozen):
-                            continue
-
+                    if (lp and lp.isNotFrozen() and (lp.isFilled() or count_list[ridx-1] > 0)):
+                        if (l and ll and l.isNotFrozen() and ll.isNotFrozen()):
+                            need = 0
+                            if (l.isBlank()): need += 1
+                            if (ll.isBlank()): need += 1
+                            if (count_list[ridx] >= need): continue
                     # look right
-                    if (right and right.state != state.frozen and
-                        right.right and right.right.state != state.frozen and
-                        right.parent and right.parent.state != state.frozen):
-                            continue
+                    if (rp and rp.isNotFrozen() and (rp.isFilled() or count_list[ridx-1] > 0)):
+                        if (r and rr and r.isNotFrozen() and rr.isNotFrozen()):
+                            need = 0
+                            if (r.isBlank()): need += 1
+                            if (rr.isBlank()): need += 1
+                            if (count_list[ridx] >= need): continue
                 elif (node.direction == dir.DOWN):
-                    if (parent and parent.state != state.frozen):
-                        # look center
-                        if (left and left.state != state.frozen and
-                            right and right.state != state.frozen):
-                                continue
-                        # look up
-                        if (parent.left and parent.left.state != state.frozen and
-                            parent.right and parent.right.state != state.frozen):
-                                continue
+                    # look up
+                    if (p and p.isNotFrozen() and (p.isFilled() or count_list[ridx-1] > 0)):
+                        if (l and r and l.isNotFrozen() and r.isNotFrozen()):
+                            need = 0
+                            if (l.isBlank()): need += 1
+                            if (r.isBlank()): need += 1
+                            if (count_list[ridx] >= need): continue
+                        if (pl and pr and pl.isNotFrozen() and pr.isNotFrozen()):
+                           need = 0
+                           if (pl.isBlank()): need += 1
+                           if (pr.isBlank()): need += 1
+                           if (count_list[ridx-1] >= need): continue
                     # look left
-                    if (left and left.state != state.frozen and
-                        left.left and left.left.state != state.frozen and
-                        left.child and left.child.state != state.frozen):
-                            continue
+                    if (lc and lc.isNotFrozen() and (lc.isFilled() or count_list[ridx+1] > 0)):
+                        if (l and ll and l.isNotFrozen() and ll.isNotFrozen()):
+                            need = 0
+                            if (l.isBlank()): need += 1
+                            if (ll.isBlank()): need += 1
+                            if (count_list[ridx] >= need): continue
                     # look right
-                    if (right and right.state != state.frozen and
-                        right.right and right.right.state != state.frozen and
-                        right.child and right.child.state != state.frozen):
-                            continue
+                    if (rc and rc.isNotFrozen() and (rc.isFilled() or count_list[ridx+1] > 0)):
+                        if (r and rr and r.isNotFrozen() and rr.isNotFrozen()):
+                            need = 0
+                            if (r.isBlank()): need += 1
+                            if (rr.isBlank()): need += 1
+                            if (count_list[ridx] >= need): continue
                 # if we reach here there are no possible pyramids with this triangle
                 node.state = state.frozen
                 did_something = True
@@ -147,7 +179,7 @@ class pyramid(Frame):
                 elif i == 1: rlist = self.rlist_b
                 elif i == 2: rlist = self.rlist_c
                 did_something |= self.easy_fill(rlist)
-                did_something |= self.medium_fill(rlist)
+            did_something |= self.medium_fill(self.rlist_a, self.count_list_a)
         self.canvas.delete("temp")
 
     def key(self, event):
@@ -317,6 +349,7 @@ class pyramid(Frame):
         self.cursor = self.top = node = parent_node = triangle()
         self.rlist_a = [None for x in range(self.rcnt)]
         self.rlist_a[0] = [node]
+        self.count_list_a = [0 for x in range(self.rcnt)]
         for ridx in range(1, self.rcnt):
             prev_node = None
             ccnt = 1 + ridx * 2
@@ -344,9 +377,11 @@ class pyramid(Frame):
         
         # rlist is the list of rows at the top of the pyramid
         self.rlist = self.rlist_a
+        self.count_list = self.count_list_a
 
         # b goes from bottom-right to the top-left
         self.rlist_b = [None for x in range(self.rcnt)]
+        self.count_list_b = [0 for x in range(self.rcnt)]
         node = self.top
         ridx = self.rcnt - 1
         while(ridx >= 0):
@@ -370,7 +405,9 @@ class pyramid(Frame):
             direction = dir.DOWN
             ridx -= 1
 
+        # c goes from bottom-left to top-right
         self.rlist_c = [None for x in range(self.rcnt)]
+        self.count_list_c = [0 for x in range(self.rcnt)]
         node = self.top
         ridx = self.rcnt - 1
         while(ridx >= 0):
@@ -416,10 +453,8 @@ class pyramid(Frame):
         for ridx in range(0, self.rcnt):
             for cidx in range(0, len(self.rlist[ridx])):
                 node = self.rlist[ridx][cidx]
-                if (node.answer == True):
-                    node.state = state.filled
-                else:
-                    node.state = state.blank
+                node.state = state.blank
+                if (node.answer == True): node.state = state.filled
 
     def draw(self):
         already_won = False
@@ -484,15 +519,14 @@ class pyramid(Frame):
                 if (node.direction == dir.UP):
                     node.xy = ((node.xleft, node.ybottom), (node.xright, node.ybottom), (node.xmiddle, node.ytop))
                     mytags.append("uptriangle")
-                    node.draw(self.canvas, color, mytags)
                     right_col_idx -= 1
                     alt_left_col_idx += 1
                 else:
                     node.xy = ((node.xleft, node.ytop), (node.xright, node.ytop), (node.xmiddle, node.ybottom))
                     mytags.append("downtriangle")
-                    node.draw(self.canvas, color, mytags)
                     left_col_idx += 1
                     alt_right_col_idx -= 1
+                node.draw(self.canvas, color, mytags)
 
             color = "black"
             if (cnt < 0): color = "tomato"
@@ -502,6 +536,7 @@ class pyramid(Frame):
             if (self.hide == False and self.cursor != None and ridx == self.ridx):
                 self.canvas.create_oval(x-12, y-12, x+12, y+12, fill='gold', tags="text")
             self.canvas.create_text(x, y, fill=color, text=cnt, font="12x24", tags="text")
+            self.count_list[ridx] = cnt
 
         if (self.cursor and self.hide == False and (already_won == True or pyramid.play_mode == False or self.winner == False)):
             self.cursor.outline(self.canvas)
@@ -513,9 +548,16 @@ class pyramid(Frame):
             return
 
         # calculate totals on the right
-        if (self.rlist == self.rlist_a): next_list = self.rlist_b
-        elif (self.rlist == self.rlist_b): next_list = self.rlist_c
-        else: next_list = self.rlist_a
+        if (self.rlist == self.rlist_a):
+            next_list = self.rlist_b
+            next_count_list = self.count_list_b
+        elif (self.rlist == self.rlist_b):
+            next_list = self.rlist_c
+            next_count_list = self.count_list_c
+        else:
+            next_list = self.rlist_a
+            next_count_list = self.count_list_a
+
         for ridx in range(0, len(next_list)):
             nlist = next_list[len(next_list) - ridx - 1]
             cnt = 0
@@ -534,11 +576,18 @@ class pyramid(Frame):
             if (self.hide == False and this_one):
                 self.canvas.create_oval(x-12, y-12, x+12, y+12, fill='gold')
             self.canvas.create_text(x, y, fill=color, text=cnt, font="12x24", tags="text")
+            next_count_list[len(next_list) - ridx - 1] = cnt
 
         # calculate the totals along the bottom
-        if (next_list == self.rlist_a): next_list = self.rlist_b
-        elif (next_list == self.rlist_b): next_list = self.rlist_c
-        else: next_list = self.rlist_a
+        if (next_list == self.rlist_a):
+            next_list = self.rlist_b
+            next_count_list = self.count_list_b
+        elif (next_list == self.rlist_b):
+            next_list = self.rlist_c
+            next_count_list = self.count_list_c
+        else:
+            next_list = self.rlist_a
+            next_count_list = self.count_list_a
         for ridx in range(0, len(next_list)):
             nlist = next_list[len(next_list) - ridx - 1]
             cnt = 0
@@ -557,11 +606,12 @@ class pyramid(Frame):
             if (self.hide == False and this_one):
                 self.canvas.create_oval(x-12, y-12, x+12, y+12, fill='gold')
             self.canvas.create_text(x, y, fill=color, text=cnt, font="12x24", tags="text")
+            next_count_list[len(next_list) - ridx - 1] = cnt
 
+        # arrows
         self.canvas.create_image(center_x - (self.half_length * self.rcnt / 2) - 130, self.rcnt * self.altitude / 2, image=self.right_arrow)
         self.canvas.create_image(center_x + (self.half_length * self.rcnt / 2) + 30, ((self.rcnt - 1) * self.altitude / 2) - self.altitude / 2, image=self.down_left_arrow)
         self.canvas.create_image(center_x - 15, (self.rcnt + 3) * self.altitude, image=self.up_left_arrow)
-
         self.canvas.create_text(100, 150, text="total shaded triangles: " + str(total_cnt), font="12x24", tags="text")
 
     def open(self):

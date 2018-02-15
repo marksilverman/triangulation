@@ -24,6 +24,24 @@ class triangle():
         self.id = triangle.next_id
         triangle.next_id += 1
 
+    def freeze(self):
+        self.state = state.frozen
+
+    def isFrozen(self):
+        return self.state == state.frozen
+
+    def isNotFrozen(self):
+        return self.state != state.frozen
+
+    def isFilled(self):
+        return self.state == state.filled
+
+    def isBlank(self):
+        return self.state == state.blank
+
+    def isNotBlank(self):
+        return self.state != state.blank
+
     def outline(self, canvas):
         canvas.create_polygon(self.xy, outline="SlateBlue1", fill="", width=6)
 
