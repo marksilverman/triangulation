@@ -1,6 +1,11 @@
 # pyramid
 # a logic puzzle by Mark Silverman
 # 2018/01/21
+
+# todo
+# o implement undo/redo (need a command queue)
+# o improve auto-solve
+# o ?
 from triangle import *
 from tkinter import *
 from tkinter import filedialog
@@ -41,7 +46,9 @@ class pyramid(Frame):
         else:
             self.rlist = self.rlist_a
             self.count_list = self.count_list_a
-        # self.cursor = self.rlist[self.ridx][self.cidx]
+        self.top = self.rlist[0][0]
+        self.left = self.rlist[self.rcnt-1][0]
+        self.right = self.rlist[self.rcnt-1][len(self.rlist[self.rcnt-1])-1]
         self.draw()
 
     # fill in the easy stuff
@@ -181,6 +188,30 @@ class pyramid(Frame):
                 did_something |= self.easy_fill(rlist)
             did_something |= self.medium_fill(self.rlist_a, self.count_list_a)
         self.canvas.delete("temp")
+    
+    def cleft(self, event):
+        self.cidx = 0
+        self.cursor = self.rlist[self.ridx][self.cidx]
+        self.draw()
+    
+    def cright(self, event):
+        self.cidx = len(self.rlist[self.ridx])-1
+        self.cursor = self.rlist[self.ridx][self.cidx]
+        self.draw()
+    
+    def cup(self, event):
+        while self.cidx > 0 and len(self.rlist[self.ridx-1]) >= self.cidx:
+            self.ridx -= 1
+            self.cidx -= 1
+        self.cursor = self.rlist[self.ridx][self.cidx]
+        self.draw()
+    
+    def cdown(self, event):
+        while (self.ridx < self.rcnt-1):
+            self.ridx += 1
+            self.cidx += 1
+        self.cursor = self.rlist[self.ridx][self.cidx]
+        self.draw()
 
     def key(self, event):
         k = repr(event.keysym)
@@ -202,8 +233,23 @@ class pyramid(Frame):
         if (k == "'h'"): self.hide = not self.hide
         if (k == "'equal'" or k == "'plus'"): self.more_rows()
         if (k == "'minus'" or k == "'underscore'"): self.fewer_rows()
-        if (k == "'Home'" or k == "'Prior'"): self.cursor = self.top
-        if (k == "'End'" or k == "'Next'"): self.cursor = self.rlist[self.rcnt-1][self.cidx+self.rcnt-self.ridx-1]
+
+        if (k == "'Home'"): self.cursor = self.top
+        if (k == "'End'"): self.cursor = self.rlist[self.rcnt-1][self.cidx+self.rcnt-self.ridx-1]
+
+        if (k == "'Prior'"):
+            if (self.cursor == self.top):
+                self.cursor = self.left
+            elif (self.cursor == self.left):
+                self.cursor = self.right
+            else: self.cursor = self.top
+
+        if (k == "'Next'"):
+            if (self.cursor == self.top):
+                self.cursor = self.right
+            elif (self.cursor == self.right):
+                self.cursor = self.left
+            else: self.cursor = self.top
 
         if (k == "'Left'" or k == "'4'"):
             self.cidx -= 1
@@ -316,6 +362,10 @@ class pyramid(Frame):
         self.pack()
         self.createWidgets()
         master.bind("<Key>", self.key)
+        master.bind("<Control-Left>", self.cleft)
+        master.bind("<Control-Right>", self.cright)
+        master.bind("<Control-Up>", self.cup)
+        master.bind("<Control-Down>", self.cdown)
         self.canvas.bind("<Button-1>", self.click)
         self.canvas.bind("<Button-3>", self.click)
         self.right_arrow = PhotoImage(file="right arrow.gif")
@@ -375,6 +425,9 @@ class pyramid(Frame):
                     parent_node = parent_node.right
             parent_node = start_of_current_row;
         
+        self.left = self.rlist_a[self.rcnt-1][0]
+        self.right = self.rlist_a[self.rcnt-1][len(self.rlist_a[self.rcnt-1])-1]
+
         # rlist is the list of rows at the top of the pyramid
         self.rlist = self.rlist_a
         self.count_list = self.count_list_a
@@ -755,8 +808,8 @@ class pyramid(Frame):
         #        self.canvas.after(100)
 
         # twinkles
-        for i in range(0, 5):
-            for j in range(0, 30):
+        for i in range(0, 20):
+            for j in range(0, triangle.next_id//10):
                 color = random_color()
                 mytags = "triangle"
                 mytags += str(random.randint(0, triangle.next_id))
