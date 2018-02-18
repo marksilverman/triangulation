@@ -13,7 +13,7 @@ import math
 import random
 
 canvas_width = 900
-canvas_height = 700
+canvas_height = 800
 center_x = canvas_width // 2
 
 def random_color():
@@ -68,7 +68,7 @@ class pyramid(Frame):
                 for nidx in range(0, len(nlist)):
                     node = nlist[nidx]
                     if (node.state != state.filled and node.state != state.frozen):
-                        node.state = state.frozen
+                        node.freeze()
                         node.draw(self.canvas, "green", "temp")
                         self.canvas.update_idletasks()
                         self.canvas.after(10)
@@ -78,7 +78,7 @@ class pyramid(Frame):
                 for nidx in range(0, len(nlist)):
                     node = nlist[nidx]
                     if (node.state != state.frozen and node.state != state.filled):
-                        node.state = state.filled
+                        node.fill()
                         node.draw(self.canvas, "black", "temp")
                         self.canvas.update_idletasks()
                         self.canvas.after(10)
@@ -173,7 +173,7 @@ class pyramid(Frame):
                             if (rr.isBlank()): need += 1
                             if (count_list[ridx] >= need): continue
                 # if we reach here there are no possible pyramids with this triangle
-                node.state = state.frozen
+                node.freeze()
                 did_something = True
         return did_something
 
@@ -294,6 +294,8 @@ class pyramid(Frame):
     def key(self, event):
         k = repr(event.keysym)
         # print(k)
+        if (k == "'z'"): cmd.undo()
+        if (k == "'x'"): cmd.redo()
         if (k == "'r'"):
             self.rotate()
             return
@@ -403,6 +405,14 @@ class pyramid(Frame):
         self.add_row = Button(self, text="++")
         self.add_row["command"] = self.more_rows
         self.add_row.pack({"side": "left"})
+
+        self.undo = Button(self, text="undo")
+        self.undo["command"] = cmd.undo
+        self.undo.pack({"side": "left"})
+
+        self.redo = Button(self, text="redo")
+        self.redo["command"] = cmd.redo
+        self.redo.pack({"side": "left"})
 
         self.new_button = Button(self, text="new")
         self.new_button["command"] = self.new
@@ -577,7 +587,7 @@ class pyramid(Frame):
         self.winner = False
         for ridx in range(0, self.rcnt):
             for cidx in range(0, len(self.rlist[ridx])):
-                self.rlist[ridx][cidx].state = state.blank
+                self.rlist[ridx][cidx].blank()
 
     def show_errors(self):
         for ridx in range(0, self.rcnt):
@@ -592,8 +602,8 @@ class pyramid(Frame):
         for ridx in range(0, self.rcnt):
             for cidx in range(0, len(self.rlist[ridx])):
                 node = self.rlist[ridx][cidx]
-                node.state = state.blank
-                if (node.answer == True): node.state = state.filled
+                node.blank()
+                if (node.answer == True): node.fill()
 
     def draw(self):
         already_won = False
@@ -761,6 +771,8 @@ class pyramid(Frame):
         if (len(data) != self.rcnt):
             self.rcnt = len(data)
             self.new()
+        else:
+            self.clear()
         for ridx in range(0, self.rcnt):
             line = data[ridx]
             nlist = line.split()
@@ -768,9 +780,10 @@ class pyramid(Frame):
             for cidx in range(ccnt):
                 node = self.rlist[ridx][cidx]
                 if (nlist[cidx][:1] == 'X'): node.answer = True
-                if (nlist[cidx][-1:] == 'f'): node.state = state.filled
-                if (nlist[cidx][-1:] == '!'): node.state = state.frozen
+                if (nlist[cidx][-1:] == 'f'): node.fill()
+                if (nlist[cidx][-1:] == '!'): node.freeze()
         pyramid.play_mode = True
+        cmd.reset()
         self.draw()
 
     # X - answer
