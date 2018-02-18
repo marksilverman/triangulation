@@ -253,8 +253,8 @@ class pyramid(Frame):
                                 if r.isBlank(): need_these.append(r)
                                 if rr.isBlank(): need_these.append(rr)
                                 found_one = True
-                    for n in need_these:
-                        n.fill()
+                    if len(need_these): did_something = True
+                    for n in need_these: n.fill()
                     continue
                 elif (node.direction == dir.DOWN):
                     # look up
@@ -303,8 +303,8 @@ class pyramid(Frame):
                                 if r.isBlank(): need_these.append(r)
                                 if rr.isBlank(): need_these.append(rr)
                                 found_one = True
-                    for n in need_these:
-                        n.fill()
+                    if len(need_these): did_something = True
+                    for n in need_these: n.fill()
                     continue
         return did_something
 
@@ -322,16 +322,19 @@ class pyramid(Frame):
         self.canvas.delete("temp")
     
     def ctrl_left(self, event):
+        if (self.cursor == None): return
         self.cidx = 0
         self.cursor = self.rlist[self.ridx][self.cidx]
         self.draw()
     
     def ctrl_right(self, event):
+        if (self.cursor == None): return
         self.cidx = len(self.rlist[self.ridx])-1
         self.cursor = self.rlist[self.ridx][self.cidx]
         self.draw()
     
     def ctrl_up(self, event):
+        if (self.cursor == None): return
         while self.cidx > 0 and len(self.rlist[self.ridx-1]) >= self.cidx:
             self.ridx -= 1
             self.cidx -= 1
@@ -339,6 +342,7 @@ class pyramid(Frame):
         self.draw()
     
     def ctrl_down(self, event):
+        if (self.cursor == None): return
         while (self.ridx < self.rcnt-1):
             self.ridx += 1
             self.cidx += 1
@@ -346,6 +350,7 @@ class pyramid(Frame):
         self.draw()
 
     def shift_left(self, event):
+        if (self.cursor == None): return
         self.cursor.fill()
         self.cidx -= 1
         if (self.cidx < 0): self.cidx = len(self.rlist[self.ridx]) - 1
@@ -354,6 +359,7 @@ class pyramid(Frame):
         self.draw()
 
     def shift_right(self, event):
+        if (self.cursor == None): return
         self.cursor.fill()
         self.cidx += 1
         if (self.cidx == len(self.rlist[self.ridx])): self.cidx = 0
@@ -362,6 +368,7 @@ class pyramid(Frame):
         self.draw()
 
     def shift_up(self, event):
+        if (self.cursor == None): return
         self.cursor.fill()
         if (self.ridx > 0):
             if (self.cidx == 0):
@@ -376,6 +383,7 @@ class pyramid(Frame):
         self.draw()
 
     def shift_down(self, event):
+        if (self.cursor == None): return
         self.cursor.fill()
         if (self.ridx < (self.rcnt - 1)):
             self.ridx += 1
@@ -385,6 +393,7 @@ class pyramid(Frame):
         self.draw()
 
     def alt_left(self, event):
+        if (self.cursor == None): return
         self.cursor.freeze()
         self.cidx -= 1
         if (self.cidx < 0): self.cidx = len(self.rlist[self.ridx]) - 1
@@ -393,6 +402,7 @@ class pyramid(Frame):
         self.draw()
 
     def alt_right(self, event):
+        if (self.cursor == None): return
         self.cursor.freeze()
         self.cidx += 1
         if (self.cidx == len(self.rlist[self.ridx])): self.cidx = 0
@@ -401,6 +411,7 @@ class pyramid(Frame):
         self.draw()
 
     def alt_up(self, event):
+        if (self.cursor == None): return
         self.cursor.freeze()
         if (self.ridx > 0):
             if (self.cidx == 0):
@@ -415,6 +426,7 @@ class pyramid(Frame):
         self.draw()
 
     def alt_down(self, event):
+        if (self.cursor == None): return
         self.cursor.freeze()
         if (self.ridx < (self.rcnt - 1)):
             self.ridx += 1
