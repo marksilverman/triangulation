@@ -3,9 +3,8 @@
 # 2018/01/21
 
 # todo
-# o implement undo/redo (need a command queue)
 # o improve auto-solve
-# o ?
+
 from triangle import *
 from tkinter import *
 from tkinter import filedialog
@@ -86,7 +85,7 @@ class pyramid(Frame):
         return did_something
 
     # freeze any triangles which can't be part of a pyramid
-    def medium_fill(self, rlist, count_list):
+    def freeze_impossibles(self, rlist, count_list):
         did_something = False
         for ridx in range(0, self.rcnt):
             nlist = rlist[ridx]
@@ -177,6 +176,138 @@ class pyramid(Frame):
                 did_something = True
         return did_something
 
+    def extend_singles(self, rlist, count_list):
+        did_something = False
+        for ridx in range(0, self.rcnt):
+            nlist = rlist[ridx]
+            for nidx in range(0, len(nlist)):
+                node = nlist[nidx]
+                if (node.isNotFilled()): continue
+                ll = lp = lc = rr = rp = rc = pl = pr = cl = cr = None
+                l = node.left
+                r = node.right
+                c = node.child
+                p = node.parent
+                if (l):
+                    ll = l.left
+                    lp = l.parent
+                    lc = l.child
+                if (r):
+                    rr = r.right
+                    rp = r.parent
+                    rc = r.child
+                if (p):
+                    pl = p.left
+                    pr = p.right
+                if (c):
+                    cl = c.left
+                    cr = c.right
+
+                need_these = []
+                found_one = False
+
+                # look for a unique solution
+                if node.direction == dir.UP:
+                    # look down
+                    if c and c.isNotFrozen() and (c.isFilled() or count_list[ridx+1] > 0):
+                        if l and r and l.isNotFrozen() and r.isNotFrozen():
+                            need = 0
+                            if l.isBlank(): need += 1
+                            if r.isBlank(): need += 1
+                            if count_list[ridx] >= need:
+                                if c.isBlank(): need_these.append(c)
+                                if l.isBlank(): need_these.append(l)
+                                if r.isBlank(): need_these.append(r)
+                                found_one = True
+                        if cl and cr and cl.isNotFrozen() and cr.isNotFrozen():
+                           need = 0
+                           if cl.isBlank(): need += 1
+                           if cr.isBlank(): need += 1
+                           if count_list[ridx+1] >= need:
+                                if found_one: continue
+                                if c.isBlank(): need_these.append(c)
+                                if cl.isBlank(): need_these.append(cl)
+                                if cr.isBlank(): need_these.append(cr)
+                                found_one = True
+                    # look left
+                    if lp and lp.isNotFrozen() and (lp.isFilled() or count_list[ridx-1] > 0):
+                        if l and ll and l.isNotFrozen() and ll.isNotFrozen():
+                            need = 0
+                            if l.isBlank(): need += 1
+                            if ll.isBlank(): need += 1
+                            if count_list[ridx] >= need:
+                                if found_one: continue
+                                if lp.isBlank(): need_these.append(lp)
+                                if l.isBlank(): need_these.append(l)
+                                if ll.isBlank(): need_these.append(ll)
+                                found_one = True
+                    # look right
+                    if rp and rp.isNotFrozen() and (rp.isFilled() or count_list[ridx-1] > 0):
+                        if r and rr and r.isNotFrozen() and rr.isNotFrozen():
+                            need = 0
+                            if r.isBlank(): need += 1
+                            if rr.isBlank(): need += 1
+                            if count_list[ridx] >= need:
+                                if found_one: continue
+                                if rp.isBlank(): need_these.append(rp)
+                                if r.isBlank(): need_these.append(r)
+                                if rr.isBlank(): need_these.append(rr)
+                                found_one = True
+                    for n in need_these:
+                        n.fill()
+                    continue
+                elif (node.direction == dir.DOWN):
+                    # look up
+                    if (p and p.isNotFrozen() and (p.isFilled() or count_list[ridx-1] > 0)):
+                        if (l and r and l.isNotFrozen() and r.isNotFrozen()):
+                            need = 0
+                            if (l.isBlank()): need += 1
+                            if (r.isBlank()): need += 1
+                            if (count_list[ridx] >= need):
+                                if found_one: continue
+                                if p.isBlank(): need_these.append(p)
+                                if l.isBlank(): need_these.append(l)
+                                if r.isBlank(): need_these.append(r)
+                                found_one = True
+                        if (pl and pr and pl.isNotFrozen() and pr.isNotFrozen()):
+                           need = 0
+                           if (pl.isBlank()): need += 1
+                           if (pr.isBlank()): need += 1
+                           if (count_list[ridx-1] >= need):
+                                if found_one: continue
+                                if p.isBlank(): need_these.append(p)
+                                if pl.isBlank(): need_these.append(pl)
+                                if pr.isBlank(): need_these.append(pr)
+                                found_one = True
+                    # look left
+                    if (lc and lc.isNotFrozen() and (lc.isFilled() or count_list[ridx+1] > 0)):
+                        if (l and ll and l.isNotFrozen() and ll.isNotFrozen()):
+                            need = 0
+                            if (l.isBlank()): need += 1
+                            if (ll.isBlank()): need += 1
+                            if (count_list[ridx] >= need):
+                                if found_one: continue
+                                if lc.isBlank(): need_these.append(lc)
+                                if l.isBlank(): need_these.append(l)
+                                if ll.isBlank(): need_these.append(ll)
+                                found_one = True
+                    # look right
+                    if (rc and rc.isNotFrozen() and (rc.isFilled() or count_list[ridx+1] > 0)):
+                        if (r and rr and r.isNotFrozen() and rr.isNotFrozen()):
+                            need = 0
+                            if (r.isBlank()): need += 1
+                            if (rr.isBlank()): need += 1
+                            if (count_list[ridx] >= need):
+                                if found_one: continue
+                                if rc.isBlank(): need_these.append(rc)
+                                if r.isBlank(): need_these.append(r)
+                                if rr.isBlank(): need_these.append(rr)
+                                found_one = True
+                    for n in need_these:
+                        n.fill()
+                    continue
+        return did_something
+
     def solve(self):
         did_something = True
         while (did_something):
@@ -186,7 +317,8 @@ class pyramid(Frame):
                 elif i == 1: rlist = self.rlist_b
                 elif i == 2: rlist = self.rlist_c
                 did_something |= self.easy_fill(rlist)
-            did_something |= self.medium_fill(self.rlist_a, self.count_list_a)
+            did_something |= self.freeze_impossibles(self.rlist_a, self.count_list_a)
+            did_something |= self.extend_singles(self.rlist_a, self.count_list_a)
         self.canvas.delete("temp")
     
     def ctrl_left(self, event):
@@ -768,11 +900,8 @@ class pyramid(Frame):
         if len(filename) == 0: return
         f = open(filename, 'r')
         data = list(f)
-        if (len(data) != self.rcnt):
-            self.rcnt = len(data)
-            self.new()
-        else:
-            self.clear()
+        self.rcnt = len(data)
+        self.new()
         for ridx in range(0, self.rcnt):
             line = data[ridx]
             nlist = line.split()

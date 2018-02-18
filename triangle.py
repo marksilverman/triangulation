@@ -15,6 +15,8 @@ class cmd():
     queue = []
     idx = -1
     def __init__(self, node, new_state):
+        if (node.state == new_state):
+            return
         self.node = node
         self.old_state = node.state
         self.new_state = new_state
@@ -57,14 +59,9 @@ class triangle():
         self.id = triangle.next_id
         triangle.next_id += 1
 
-    def freeze(self):
-        if (self.isNotFrozen()): cmd(self, state.frozen)
-
-    def fill(self):
-        if (self.isNotFilled()): cmd(self, state.filled)
-
-    def blank(self):
-        if (self.isNotBlank()): cmd(self, state.blank)
+    def freeze(self): cmd(self, state.frozen)
+    def fill(self): cmd(self, state.filled)
+    def blank(self): cmd(self, state.blank)
 
     def isFrozen(self): return self.state == state.frozen
     def isFilled(self): return self.state == state.filled
