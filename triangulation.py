@@ -19,20 +19,18 @@ def random_color():
     return "#" + format(int(random.randint(0, 0xFFFFFF)), '06x')
 
 class pyramid(Frame):
-    play_mode = False
-
     def click(self, event):
         self.cursor = None
         self.draw()
 
     def left_click(self, event, node):
         self.cursor = node
-        node.toggle(dir.LEFT, self.play_mode)
+        node.toggle(dir.LEFT)
         self.draw()
 
     def right_click(self, event, node):
         self.cursor = node
-        node.toggle(dir.RIGHT, self.play_mode)
+        node.toggle(dir.RIGHT)
         self.draw()
 
     def rotate(self):
@@ -504,11 +502,11 @@ class pyramid(Frame):
 
         if (k == "'space'"): # fill
             if (self.cursor == None): self.cursor = self.rlist[self.ridx][self.cidx]
-            self.cursor.toggle(dir.LEFT, self.play_mode)
+            self.cursor.toggle(dir.LEFT)
 
         if (k == "'f'"): # freeze
             if (self.cursor == None): self.cursor = self.top
-            self.cursor.toggle(dir.RIGHT, self.play_mode)
+            self.cursor.toggle(dir.RIGHT)
 
         self.draw()
 
@@ -620,12 +618,12 @@ class pyramid(Frame):
         self.new()
 
     def play(self):
-        if (pyramid.play_mode == False):
-            pyramid.play_mode = True
+        if (cmd.play_mode == False):
+            cmd.play_mode = True
             self.play_button.config(text="design")
             self.clear()
         else:
-            pyramid.play_mode = False
+            cmd.play_mode = False
             self.play_button.config(text="play")
             self.refill()
         self.draw()
@@ -634,7 +632,7 @@ class pyramid(Frame):
     def new(self):
         triangle.next_id = 0
         self.winner = False
-        pyramid.play_mode = False
+        cmd.play_mode = False
         self.hide = False
         self.cursor = self.top = node = parent_node = triangle()
         self.rlist_a = [None for x in range(self.rcnt)]
@@ -756,7 +754,7 @@ class pyramid(Frame):
         self.winner = True
         self.canvas.delete("all")
         msg = "design mode"
-        if (pyramid.play_mode): msg = "play mode"
+        if (cmd.play_mode): msg = "play mode"
         self.canvas.create_text(100, 50, text=msg, font="12x24", tags="text")
         
         total_cnt = 0
@@ -785,7 +783,7 @@ class pyramid(Frame):
                     cnt += 1
                     total_cnt += 1
 
-                if (pyramid.play_mode == True and
+                if (cmd.play_mode == True and
                     (node.answer == True and node.state != state.filled) or
                     (node.answer == False and node.state == state.filled)):
                     self.winner = False
@@ -793,8 +791,8 @@ class pyramid(Frame):
                 color = "ivory"
                 if (node.state == state.filled):
                     color = "medium sea green"
-                    if (pyramid.play_mode == True): cnt -= 1
-                elif (node.state == state.blank and pyramid.play_mode): color = "thistle1"
+                    if (cmd.play_mode == True): cnt -= 1
+                elif (node.state == state.blank and cmd.play_mode): color = "thistle1"
                 elif (node.state == state.frozen): color = "gray"
                 if (self.hide == True): color = "white"
 
@@ -831,11 +829,11 @@ class pyramid(Frame):
             self.canvas.create_text(x, y, fill=color, text=cnt, font="12x24", tags="text")
             self.count_list[ridx] = cnt
 
-        if (self.cursor and self.hide == False and (already_won == True or pyramid.play_mode == False or self.winner == False)):
+        if (self.cursor and self.hide == False and (already_won == True or cmd.play_mode == False or self.winner == False)):
             self.cursor.outline(self.canvas)
 
         # winner?
-        if (already_won == False and pyramid.play_mode and self.winner == True):
+        if (already_won == False and cmd.play_mode and self.winner == True):
             self.canvas.delete("text")
             self.chicken_dinner()
             return
@@ -860,7 +858,7 @@ class pyramid(Frame):
                 if (node == self.cursor):
                     this_one = True
                 if (node.answer): cnt += 1
-                if (node.state == state.filled and pyramid.play_mode == True): cnt -= 1
+                if (node.state == state.filled and cmd.play_mode == True): cnt -= 1
             color = "black"
             if (cnt < 0): color = "tomato"
             elif (cnt == 0): color = "darkgreen"
@@ -890,7 +888,7 @@ class pyramid(Frame):
                 if (node == self.cursor):
                     this_one = True
                 if (node.answer): cnt += 1
-                if (node.state == state.filled and pyramid.play_mode == True): cnt -= 1
+                if (node.state == state.filled and cmd.play_mode == True): cnt -= 1
                 color = "black"
             if (cnt < 0): color = "tomato"
             elif (cnt == 0): color = "darkgreen"
@@ -923,7 +921,7 @@ class pyramid(Frame):
                 if (nlist[cidx][:1] == 'X'): node.answer = True
                 if (nlist[cidx][-1:] == 'f'): node.fill()
                 if (nlist[cidx][-1:] == '!'): node.freeze()
-        pyramid.play_mode = True
+        cmd.play_mode = True
         cmd.reset()
         self.draw()
 

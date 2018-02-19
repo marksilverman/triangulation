@@ -12,6 +12,7 @@ class state(Enum):
     frozen = 2
 
 class cmd():
+    play_mode = False
     queue = []
     idx = -1
     def __init__(self, node, new_state):
@@ -59,9 +60,17 @@ class triangle():
         self.id = triangle.next_id
         triangle.next_id += 1
 
-    def freeze(self): cmd(self, state.frozen)
-    def fill(self): cmd(self, state.filled)
-    def blank(self): cmd(self, state.blank)
+    def freeze(self):
+        cmd(self, state.frozen)
+        if (cmd.play_mode == False): self.answer = False
+
+    def fill(self):
+        cmd(self, state.filled)
+        if (cmd.play_mode == False): self.answer = True
+
+    def blank(self):
+        cmd(self, state.blank)
+        if (cmd.play_mode == False): self.answer = False
 
     def isFrozen(self): return self.state == state.frozen
     def isFilled(self): return self.state == state.filled
@@ -77,7 +86,7 @@ class triangle():
         self.tags = mytags
         canvas.create_polygon(self.xy, outline="black", fill=color, activefill="gold", width=3, tags=mytags)
 
-    def toggle(self, which, play_mode):
+    def toggle(self, which):
         if (which == dir.LEFT):
             if  (self.isFilled()):
                 self.blank()
@@ -88,9 +97,3 @@ class triangle():
                 self.blank()
             else:
                 self.freeze()
-        if (play_mode == False):
-            if (self.isFilled()):
-                self.answer = 1
-            else:
-                self.answer = 0
-
