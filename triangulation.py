@@ -530,6 +530,8 @@ class pyramid(Frame):
         self.new()
 
     def createWidgets(self):
+        self.winfo_toplevel().title("Triangulation")
+
         self.remove_row = Button(self, text="--")
         self.remove_row["command"] = self.fewer_rows
         self.remove_row.pack({"side": "left"})
@@ -589,6 +591,8 @@ class pyramid(Frame):
 
     def __init__(self, master):
         Frame.__init__(self, master)
+        self.file_name = "save.txt"
+        self.dir_name = "."
         self.pack()
         self.createWidgets()
         master.bind("<Key>", self.key)
@@ -619,17 +623,18 @@ class pyramid(Frame):
 
     def play(self):
         if (cmd.play_mode == False):
-            cmd.play_mode = True
             self.play_button.config(text="design")
+            cmd.play_mode = True
             self.clear()
         else:
+            self.refill()
             cmd.play_mode = False
             self.play_button.config(text="play")
-            self.refill()
         self.draw()
 
     # create a new pyramid
     def new(self):
+        if self.rcnt == 0: return
         triangle.next_id = 0
         self.winner = False
         cmd.play_mode = False
@@ -729,7 +734,7 @@ class pyramid(Frame):
         self.winner = False
         for ridx in range(0, self.rcnt):
             for cidx in range(0, len(self.rlist[ridx])):
-                self.rlist[ridx][cidx].blank()
+                self.rlist[ridx][cidx].state = state.blank
 
     def show_errors(self):
         for ridx in range(0, self.rcnt):
@@ -906,9 +911,8 @@ class pyramid(Frame):
         self.canvas.create_text(100, 150, text="total shaded triangles: " + str(total_cnt), font="12x24", tags="text")
 
     def open(self):
-        filename = filedialog.askopenfilename(initialdir = ".", filetypes = (("text","*.txt"), ("all files","*.*")))
-        if len(filename) == 0: return
-        f = open(filename, 'r')
+        f = filedialog.askopenfile(initialdir = self.dir_name, filetypes = (("text","*.txt"), ("all files","*.*")))
+        if f == None: return
         data = list(f)
         self.rcnt = len(data)
         self.new()
@@ -924,15 +928,17 @@ class pyramid(Frame):
         cmd.play_mode = True
         cmd.reset()
         self.draw()
+        self.file_name = f.name[f.name.rfind('/')+1:]
+        self.dir_name = f.name[:f.name.rfind('/')]
+        self.winfo_toplevel().title("Triangulation - " + self.file_name)
 
     # X - answer
     # f - filled
     # ! - frozen
     # . - blank
     def save(self):
-        filename = filedialog.asksaveasfilename(initialdir = ".", filetypes = (("text","*.txt"), ("all files","*.*")))
-        if (len(filename) == 0): return
-        f = open(filename, 'w')
+        f = filedialog.asksaveasfile(initialfile = self.file_name, initialdir = ".", filetypes = (("text","*.txt"), ("all files","*.*")))
+        if f == None: return
         for ridx in range(0, self.rcnt):
             for cidx in range(0, len(self.rlist[ridx])):
                 node = self.rlist[ridx][cidx]
@@ -943,6 +949,9 @@ class pyramid(Frame):
                 elif (node.state == state.blank): f.write(".")
             if (ridx < self.rcnt - 1): f.write("\n")
         f.close()
+        self.file_name = f.name[f.name.rfind('/')+1:]
+        self.dir_name = f.name[:f.name.rfind('/')]
+        self.winfo_toplevel().title("Triangulation - " + self.file_name)
 
     def scroll(self, letter):
         f = open(letter + ".txt", 'r')
