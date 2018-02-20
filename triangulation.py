@@ -82,6 +82,26 @@ class pyramid(Frame):
                         did_something += 1
         return did_something
 
+    def find_family(self, rlist, nlist, ridx, nidx):
+        p = c = l = r = ll = lp = lc = rr = rp = rc = None
+        # parents
+        if ridx-1 >= 0:
+            if nidx-1 >= 0 and nidx-1 < len(rlist[ridx-1]): p  = rlist[ridx-1][nidx-1]
+            if nidx-2 >= 0 and nidx-2 < len(rlist[ridx-1]): lp = rlist[ridx-1][nidx-2]
+            if nidx < len(rlist[ridx-1]): rp = rlist[ridx-1][nidx]
+        #children
+        if ridx+1 < len(rlist):
+           c = rlist[ridx+1][nidx+1]
+           lc = rlist[ridx+1][nidx]
+           rc = rlist[ridx+1][nidx+2]
+        #lefts
+        if nidx-1 >= 0: l = nlist[nidx-1]
+        if nidx-2 >= 0: ll = nlist[nidx-2]
+        #rights
+        if nidx+1 < len(nlist): r = nlist[nidx+1]
+        if nidx+2 < len(nlist): rr = nlist[nidx+2]
+        return p, c, l, r, ll, lp, lc, rr, rp, rc
+
     # freeze any triangles which can't be part of a pyramid
     def freeze_impossibles(self, rlist, count_list):
         did_something = False
@@ -94,81 +114,62 @@ class pyramid(Frame):
                     node.freeze()
                     did_something = True
                     continue
-                ll = lp = lc = rr = rp = rc = pl = pr = cl = cr = None
-                l = node.left
-                r = node.right
-                c = node.child
-                p = node.parent
-                if (l):
-                    ll = l.left
-                    lp = l.parent
-                    lc = l.child
-                if (r):
-                    rr = r.right
-                    rp = r.parent
-                    rc = r.child
-                if (p):
-                    pl = p.left
-                    pr = p.right
-                if (c):
-                    cl = c.left
-                    cr = c.right
-
+                p, c, l, r, ll, lp, lc, rr, rp, rc = self.find_family(rlist, nlist, ridx, nidx)
                 # see if anything is possible
-                if (node.direction == dir.UP):
+                if node.direction == dir.UP:
                     # look down
-                    if (c and c.isNotFrozen() and (c.isFilled() or count_list[ridx+1] > 0)):
-                        if (l and r and l.isNotFrozen() and r.isNotFrozen()):
+                    if c and c.isNotFrozen() and (c.isFilled() or count_list[ridx+1] > 0):
+                        if l and r and l.isNotFrozen() and r.isNotFrozen():
                             need = 0
                             if (l.isBlank()): need += 1
                             if (r.isBlank()): need += 1
                             if (count_list[ridx] >= need): continue
-                        if (cl and cr and cl.isNotFrozen() and cr.isNotFrozen()):
+                        if lc and rc and lc.isNotFrozen() and rc.isNotFrozen():
                            need = 0
-                           if (cl.isBlank()): need += 1
-                           if (cr.isBlank()): need += 1
-                           if (count_list[ridx+1] >= need): continue
+                           if lc.isBlank(): need += 1
+                           if rc.isBlank(): need += 1
+                           if count_list[ridx+1] >= need: continue
                     # look left
-                    if (lp and lp.isNotFrozen() and (lp.isFilled() or count_list[ridx-1] > 0)):
-                        if (l and ll and l.isNotFrozen() and ll.isNotFrozen()):
+                    if lp and lp.isNotFrozen() and (lp.isFilled() or count_list[ridx-1] > 0):
+                        if l and ll and l.isNotFrozen() and ll.isNotFrozen():
                             need = 0
-                            if (l.isBlank()): need += 1
-                            if (ll.isBlank()): need += 1
-                            if (count_list[ridx] >= need): continue
+                            if l.isBlank(): need += 1
+                            if ll.isBlank(): need += 1
+                            if count_list[ridx] >= need: continue
                     # look right
-                    if (rp and rp.isNotFrozen() and (rp.isFilled() or count_list[ridx-1] > 0)):
-                        if (r and rr and r.isNotFrozen() and rr.isNotFrozen()):
+                    if rp and rp.isNotFrozen() and (rp.isFilled() or count_list[ridx-1] > 0):
+                        if r and rr and r.isNotFrozen() and rr.isNotFrozen():
                             need = 0
-                            if (r.isBlank()): need += 1
-                            if (rr.isBlank()): need += 1
-                            if (count_list[ridx] >= need): continue
-                elif (node.direction == dir.DOWN):
+                            if r.isBlank(): need += 1
+                            if rr.isBlank(): need += 1
+                            if count_list[ridx] >= need: continue
+                elif node.direction == dir.DOWN:
                     # look up
-                    if (p and p.isNotFrozen() and (p.isFilled() or count_list[ridx-1] > 0)):
-                        if (l and r and l.isNotFrozen() and r.isNotFrozen()):
+                    if p and p.isNotFrozen() and (p.isFilled() or count_list[ridx-1] > 0):
+                        if l and r and l.isNotFrozen() and r.isNotFrozen():
                             need = 0
-                            if (l.isBlank()): need += 1
-                            if (r.isBlank()): need += 1
-                            if (count_list[ridx] >= need): continue
-                        if (pl and pr and pl.isNotFrozen() and pr.isNotFrozen()):
+                            if l.isBlank(): need += 1
+                            if r.isBlank(): need += 1
+                            if count_list[ridx] >= need: continue
+                        if lp and rp and lp.isNotFrozen() and rp.isNotFrozen():
                            need = 0
-                           if (pl.isBlank()): need += 1
-                           if (pr.isBlank()): need += 1
-                           if (count_list[ridx-1] >= need): continue
+                           if lp.isBlank(): need += 1
+                           if rp.isBlank(): need += 1
+                           if count_list[ridx-1] >= need: continue
                     # look left
-                    if (lc and lc.isNotFrozen() and (lc.isFilled() or count_list[ridx+1] > 0)):
-                        if (l and ll and l.isNotFrozen() and ll.isNotFrozen()):
+                    if lc and lc.isNotFrozen() and (lc.isFilled() or count_list[ridx+1] > 0):
+                        if l and ll and l.isNotFrozen() and ll.isNotFrozen():
                             need = 0
-                            if (l.isBlank()): need += 1
-                            if (ll.isBlank()): need += 1
-                            if (count_list[ridx] >= need): continue
+                            if l.isBlank(): need += 1
+                            if ll.isBlank(): need += 1
+                            if count_list[ridx] >= need: continue
                     # look right
-                    if (rc and rc.isNotFrozen() and (rc.isFilled() or count_list[ridx+1] > 0)):
-                        if (r and rr and r.isNotFrozen() and rr.isNotFrozen()):
+                    if rc and rc.isNotFrozen() and (rc.isFilled() or count_list[ridx+1] > 0):
+                        if r and rr and r.isNotFrozen() and rr.isNotFrozen():
                             need = 0
-                            if (r.isBlank()): need += 1
-                            if (rr.isBlank()): need += 1
-                            if (count_list[ridx] >= need): continue
+                            if r.isBlank(): need += 1
+                            if rr.isBlank(): need += 1
+                            if count_list[ridx] >= need: continue
                 # if we reach here there are no possible pyramids with this triangle
                 node.freeze()
                 did_something = True
@@ -181,26 +182,7 @@ class pyramid(Frame):
             for nidx in range(0, len(nlist)):
                 node = nlist[nidx]
                 if (node.isNotFilled()): continue
-                ll = lp = lc = rr = rp = rc = pl = pr = cl = cr = None
-                l = node.left
-                r = node.right
-                c = node.child
-                p = node.parent
-                if (l):
-                    ll = l.left
-                    lp = l.parent
-                    lc = l.child
-                if (r):
-                    rr = r.right
-                    rp = r.parent
-                    rc = r.child
-                if (p):
-                    pl = p.left
-                    pr = p.right
-                if (c):
-                    cl = c.left
-                    cr = c.right
-
+                p, c, l, r, ll, lp, lc, rr, rp, rc = self.find_family(rlist, nlist, ridx, nidx)
                 need_these = []
                 found_one = False
 
@@ -217,15 +199,15 @@ class pyramid(Frame):
                                 if l.isBlank(): need_these.append(l)
                                 if r.isBlank(): need_these.append(r)
                                 found_one = True
-                        if cl and cr and cl.isNotFrozen() and cr.isNotFrozen():
+                        if lc and rc and lc.isNotFrozen() and rc.isNotFrozen():
                            need = 0
-                           if cl.isBlank(): need += 1
-                           if cr.isBlank(): need += 1
+                           if lc.isBlank(): need += 1
+                           if rc.isBlank(): need += 1
                            if count_list[ridx+1] >= need:
                                 if found_one: continue
                                 if c.isBlank(): need_these.append(c)
-                                if cl.isBlank(): need_these.append(cl)
-                                if cr.isBlank(): need_these.append(cr)
+                                if lc.isBlank(): need_these.append(lc)
+                                if rc.isBlank(): need_these.append(rc)
                                 found_one = True
                     # look left
                     if lp and lp.isNotFrozen() and (lp.isFilled() or count_list[ridx-1] > 0):
@@ -267,15 +249,15 @@ class pyramid(Frame):
                                 if l.isBlank(): need_these.append(l)
                                 if r.isBlank(): need_these.append(r)
                                 found_one = True
-                        if (pl and pr and pl.isNotFrozen() and pr.isNotFrozen()):
+                        if (lp and rp and lp.isNotFrozen() and rp.isNotFrozen()):
                            need = 0
-                           if (pl.isBlank()): need += 1
-                           if (pr.isBlank()): need += 1
+                           if (lp.isBlank()): need += 1
+                           if (rp.isBlank()): need += 1
                            if (count_list[ridx-1] >= need):
                                 if found_one: continue
                                 if p.isBlank(): need_these.append(p)
-                                if pl.isBlank(): need_these.append(pl)
-                                if pr.isBlank(): need_these.append(pr)
+                                if lp.isBlank(): need_these.append(lp)
+                                if rp.isBlank(): need_these.append(rp)
                                 found_one = True
                     # look left
                     if (lc and lc.isNotFrozen() and (lc.isFilled() or count_list[ridx+1] > 0)):
