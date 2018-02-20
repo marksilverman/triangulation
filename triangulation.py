@@ -66,7 +66,7 @@ class pyramid(Frame):
                     node = nlist[nidx]
                     if (node.state != state.filled and node.state != state.frozen):
                         node.freeze()
-                        node.draw(self.canvas, "green", "temp")
+                        node.draw(self.canvas, "black", "temp")
                         self.canvas.update_idletasks()
                         self.canvas.after(10)
                         did_something += 1
@@ -76,7 +76,7 @@ class pyramid(Frame):
                     node = nlist[nidx]
                     if (node.state != state.frozen and node.state != state.filled):
                         node.fill()
-                        node.draw(self.canvas, "black", "temp")
+                        node.draw(self.canvas, "green", "temp")
                         self.canvas.update_idletasks()
                         self.canvas.after(10)
                         did_something += 1
@@ -307,6 +307,7 @@ class pyramid(Frame):
         return did_something
 
     def solve(self):
+        self.auto_solve = True
         did_something = True
         while (did_something):
             did_something = False
@@ -593,6 +594,7 @@ class pyramid(Frame):
         Frame.__init__(self, master)
         self.file_name = "save.txt"
         self.dir_name = "."
+        self.auto_solve = False
         self.pack()
         self.createWidgets()
         master.bind("<Key>", self.key)
@@ -749,8 +751,10 @@ class pyramid(Frame):
         for ridx in range(0, self.rcnt):
             for cidx in range(0, len(self.rlist[ridx])):
                 node = self.rlist[ridx][cidx]
-                node.blank()
-                if (node.answer == True): node.fill()
+                if (node.answer == True):
+                    node.state = state.filled
+                else:
+                    node.state = state.blank
 
     def draw(self):
         already_won = False
@@ -923,8 +927,8 @@ class pyramid(Frame):
             for cidx in range(ccnt):
                 node = self.rlist[ridx][cidx]
                 if (nlist[cidx][:1] == 'X'): node.answer = True
-                if (nlist[cidx][-1:] == 'f'): node.fill()
-                if (nlist[cidx][-1:] == '!'): node.freeze()
+                if (nlist[cidx][-1:] == 'f'): node.state = state.filled
+                if (nlist[cidx][-1:] == '!'): node.state = state.frozen
         cmd.play_mode = True
         cmd.reset()
         self.draw()
@@ -1038,6 +1042,8 @@ class pyramid(Frame):
 
     # winner, winner
     def chicken_dinner(self):
+        # if self.auto_solve: return
+
         # the entire pyramid
         #for i in range(0, 8):
         #    color = random_color()
@@ -1055,7 +1061,7 @@ class pyramid(Frame):
         #        self.canvas.after(100)
 
         # twinkles
-        for i in range(0, 20):
+        for i in range(0, 10):
             for j in range(0, triangle.next_id//10):
                 color = random_color()
                 mytags = "triangle"

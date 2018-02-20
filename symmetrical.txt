@@ -1,0 +1,12 @@
+ .
+ Xf . .
+ Xf Xf Xf . .
+ . . . . . . Xf
+ . . Xf . . . Xf Xf Xf
+ . . Xf Xf Xf . . . . . .
+ . . . . . . . . . . . . .
+ Xf . . . . Xf Xf Xf Xf Xf . . Xf . .
+ Xf Xf Xf . . . . Xf Xf Xf . . Xf Xf Xf . .
+ . . . . . . Xf . . Xf . . . . . . . . Xf
+ . . Xf . . . Xf Xf Xf . . . . . Xf . . . Xf Xf Xf
+ . . Xf Xf Xf . . . . . . . . . Xf Xf Xf . . . . . .
