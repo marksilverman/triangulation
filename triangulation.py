@@ -522,7 +522,7 @@ class pyramid(Frame):
         self.row_label = Label(self)
         self.row_label["text"] = "rows:"
         self.row_label.pack({"side": "left"})
-        self.rcnt = 12
+        self.rcnt = 4
         self.tv_rows = StringVar()
         self.tv_rows.set(str(self.rcnt))
         self.row_count = Label(self)
@@ -623,94 +623,48 @@ class pyramid(Frame):
         self.winner = False
         cmd.play_mode = False
         self.hide = False
-        self.cursor = self.top = node = parent_node = triangle()
         self.rlist_a = [None for x in range(self.rcnt)]
-        self.rlist_a[0] = [node]
+        self.rlist_b = [None for x in range(self.rcnt)]
+        self.rlist_c = [None for x in range(self.rcnt)]
         self.count_list_a = [0 for x in range(self.rcnt)]
-        for ridx in range(1, self.rcnt):
-            prev_node = None
-            ccnt = 1 + ridx * 2
+        self.count_list_b = [0 for x in range(self.rcnt)]
+        self.count_list_c = [0 for x in range(self.rcnt)]
+        for ridx in range(0, self.rcnt):
+            ccnt = ridx * 2 + 1
             self.rlist_a[ridx] = [None for x in range(ccnt)]
-            for cidx in range(0, ccnt):
-                node = triangle()
-                self.rlist_a[ridx][cidx] = node
+            self.rlist_b[ridx] = [None for x in range(ccnt)]
+            self.rlist_c[ridx] = [None for x in range(ccnt)]
 
-                if (cidx % 2):
+        for a_ridx in range(0, self.rcnt):
+            b_ridx = self.rcnt - 1
+            b_cidx = a_ridx * 2
+            c_ridx = self.rcnt - a_ridx - 1
+            c_cidx = (self.rcnt - a_ridx - 1) * 2
+            ccnt = a_ridx * 2 + 1
+
+            for a_cidx in range(0, ccnt):
+                node = triangle()
+                if (a_ridx == 0 and a_cidx == 0):
+                    self.cursor = self.top = node
+
+                self.rlist_a[a_ridx][a_cidx] = node
+                self.rlist_b[b_ridx][b_cidx] = node
+                self.rlist_c[c_ridx][c_cidx] = node
+                b_cidx -= 1
+                if (a_cidx % 2):
+                    b_ridx -= 1
+                    c_cidx -= 1
                     node.direction = dir.DOWN
                 else:
+                    c_cidx += 1
+                    c_ridx += 1
                     node.direction = dir.UP
-                if (cidx == 0):
-                    start_of_current_row = node
-                if (prev_node):
-                    prev_node.right = node
-                    node.left = prev_node
-                prev_node = node
-
-                if (cidx > 0 and cidx < (ccnt- 1)):
-                    node.parent = parent_node
-                    parent_node.child = node
-                    parent_node = parent_node.right
-            parent_node = start_of_current_row;
         
         self.left = self.rlist_a[self.rcnt-1][0]
         self.right = self.rlist_a[self.rcnt-1][len(self.rlist_a[self.rcnt-1])-1]
 
-        # rlist is the list of rows at the top of the pyramid
         self.rlist = self.rlist_a
         self.count_list = self.count_list_a
-
-        # b goes from bottom-right to the top-left
-        self.rlist_b = [None for x in range(self.rcnt)]
-        self.count_list_b = [0 for x in range(self.rcnt)]
-        node = self.top
-        ridx = self.rcnt - 1
-        while(ridx >= 0):
-            cidx = 0
-            ccnt = 1 + ridx * 2
-            self.rlist_b[ridx] = [None for x in range(ccnt)]
-            start_of_row = node
-            direction = dir.DOWN
-            while(node):
-                self.rlist_b[ridx][cidx] = node
-                cidx += 1
-                if (direction == dir.DOWN):
-                    node = node.child
-                    direction = dir.LEFT
-                elif (direction == dir.LEFT):
-                    node = node.left
-                    direction = dir.DOWN
-            node = start_of_row
-            node = node.child
-            if (node): node = node.right
-            direction = dir.DOWN
-            ridx -= 1
-
-        # c goes from bottom-left to top-right
-        self.rlist_c = [None for x in range(self.rcnt)]
-        self.count_list_c = [0 for x in range(self.rcnt)]
-        node = self.top
-        ridx = self.rcnt - 1
-        while(ridx >= 0):
-            ccnt = 1 + ridx * 2
-            cidx = ccnt - 1
-            self.rlist_c[ridx] = [None for x in range(ccnt)]
-            start_of_row = node
-            direction = dir.DOWN
-            while(node):
-                self.rlist_c[ridx][cidx] = node
-                cidx -= 1
-                if (direction == dir.DOWN):
-                    node = node.child
-                    direction = dir.RIGHT
-                elif (direction == dir.RIGHT):
-                    node = node.right
-                    direction = dir.DOWN
-            node = start_of_row
-            node = node.child
-            if (node): node = node.left
-            direction = dir.DOWN
-            ridx -= 1
-        ridx = cidx = 0
         self.draw()
     
     # clears the state but not the answer flag
