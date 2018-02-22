@@ -13,6 +13,18 @@ canvas_height = 800
 center_x = canvas_width // 2
 default_length = 40
 
+def random_rgb():
+    return random.randint(0, 0xFF), random.randint(0, 0xFF), random.randint(0, 0xFF)
+
+def new_color(r, g, b):
+    r = (r + random.randint(0, 0xFF)) % 0xFF
+    g = (g + random.randint(0, 0xFF)) % 0xFF
+    b = (b + random.randint(0, 0xFF)) % 0xFF
+    return r, g, b
+
+def make_color(r, g, b):
+    return "#" + format(int(r), '02x') + format(int(g), '02x') + format(int(b), '02x')
+
 def random_color():
     return "#" + format(int(random.randint(0, 0xFFFFFF)), '06x')
 
@@ -51,17 +63,17 @@ class pyramid(Frame):
         did_something = 0
         for ridx in range(0, self.rcnt):
             answer_cnt = filled_cnt = empty_cnt = frozen_cnt = 0
-            nlist = rlist[ridx]
-            for nidx in range(0, len(nlist)):
-                node = nlist[nidx]
+            clist = rlist[ridx]
+            for cidx in range(0, len(clist)):
+                node = clist[cidx]
                 if (node.answer == True): answer_cnt += 1
                 if (node.state == state.filled): filled_cnt += 1
                 if (node.state == state.blank): empty_cnt += 1
                 if (node.state == state.frozen): frozen_cnt += 1
             if (answer_cnt == filled_cnt):
                 # freeze what's left in this row
-                for nidx in range(0, len(nlist)):
-                    node = nlist[nidx]
+                for cidx in range(0, len(clist)):
+                    node = clist[cidx]
                     if (node.state != state.filled and node.state != state.frozen):
                         node.freeze()
                         node.draw(self.canvas, "black", "temp")
@@ -70,8 +82,8 @@ class pyramid(Frame):
                         did_something += 1
             if (answer_cnt == filled_cnt + empty_cnt):
                 # fill in what's left in this row
-                for nidx in range(0, len(nlist)):
-                    node = nlist[nidx]
+                for cidx in range(0, len(clist)):
+                    node = clist[cidx]
                     if (node.state != state.frozen and node.state != state.filled):
                         node.fill()
                         node.draw(self.canvas, "green", "temp")
@@ -80,39 +92,39 @@ class pyramid(Frame):
                         did_something += 1
         return did_something
 
-    def find_family(self, rlist, nlist, ridx, nidx):
+    def find_family(self, rlist, clist, ridx, cidx):
         p = c = l = r = ll = lp = lc = rr = rp = rc = None
         #parents
         if ridx-1 >= 0:
-            if nidx-1 >= 0 and nidx-1 < len(rlist[ridx-1]): p  = rlist[ridx-1][nidx-1]
-            if nidx-2 >= 0 and nidx-2 < len(rlist[ridx-1]): lp = rlist[ridx-1][nidx-2]
-            if nidx < len(rlist[ridx-1]): rp = rlist[ridx-1][nidx]
+            if cidx-1 >= 0 and cidx-1 < len(rlist[ridx-1]): p  = rlist[ridx-1][cidx-1]
+            if cidx-2 >= 0 and cidx-2 < len(rlist[ridx-1]): lp = rlist[ridx-1][cidx-2]
+            if cidx < len(rlist[ridx-1]): rp = rlist[ridx-1][cidx]
         #children
         if ridx+1 < len(rlist):
-           c = rlist[ridx+1][nidx+1]
-           lc = rlist[ridx+1][nidx]
-           rc = rlist[ridx+1][nidx+2]
+           c = rlist[ridx+1][cidx+1]
+           lc = rlist[ridx+1][cidx]
+           rc = rlist[ridx+1][cidx+2]
         #lefts
-        if nidx-1 >= 0: l = nlist[nidx-1]
-        if nidx-2 >= 0: ll = nlist[nidx-2]
+        if cidx-1 >= 0: l = clist[cidx-1]
+        if cidx-2 >= 0: ll = clist[cidx-2]
         #rights
-        if nidx+1 < len(nlist): r = nlist[nidx+1]
-        if nidx+2 < len(nlist): rr = nlist[nidx+2]
+        if cidx+1 < len(clist): r = clist[cidx+1]
+        if cidx+2 < len(clist): rr = clist[cidx+2]
         return p, c, l, r, ll, lp, lc, rr, rp, rc
 
     # freeze any triangles which can't be part of a pyramid
     def freeze_impossibles(self, rlist, count_list):
         did_something = False
         for ridx in range(0, self.rcnt):
-            nlist = rlist[ridx]
-            for nidx in range(0, len(nlist)):
-                node = nlist[nidx]
+            clist = rlist[ridx]
+            for cidx in range(0, len(clist)):
+                node = clist[cidx]
                 if (node.isNotBlank()): continue
                 if (count_list[ridx] == 0):
                     node.freeze()
                     did_something = True
                     continue
-                p, c, l, r, ll, lp, lc, rr, rp, rc = self.find_family(rlist, nlist, ridx, nidx)
+                p, c, l, r, ll, lp, lc, rr, rp, rc = self.find_family(rlist, clist, ridx, cidx)
                 # see if anything is possible
                 if node.direction == dir.UP:
                     # look down
@@ -176,11 +188,11 @@ class pyramid(Frame):
     def extend_singles(self, rlist, count_list):
         did_something = False
         for ridx in range(0, self.rcnt):
-            nlist = rlist[ridx]
-            for nidx in range(0, len(nlist)):
-                node = nlist[nidx]
+            clist = rlist[ridx]
+            for cidx in range(0, len(clist)):
+                node = clist[cidx]
                 if (node.isNotFilled()): continue
-                p, c, l, r, ll, lp, lc, rr, rp, rc = self.find_family(rlist, nlist, ridx, nidx)
+                p, c, l, r, ll, lp, lc, rr, rp, rc = self.find_family(rlist, clist, ridx, cidx)
                 need_these = []
                 found_one = False
 
@@ -638,6 +650,7 @@ class pyramid(Frame):
         self.count_list_a = [0 for x in range(self.rcnt)]
         self.count_list_b = [0 for x in range(self.rcnt)]
         self.count_list_c = [0 for x in range(self.rcnt)]
+
         for ridx in range(0, self.rcnt):
             ccnt = ridx * 2 + 1
             self.rlist_a[ridx] = [None for x in range(ccnt)]
@@ -675,8 +688,8 @@ class pyramid(Frame):
                     c_ridx += 1
                     node.direction = dir.UP
         
-        self.left = self.rlist_a[self.rcnt-1][0]
-        self.right = self.rlist_a[self.rcnt-1][len(self.rlist_a[self.rcnt-1])-1]
+        self.left = self.rlist_b[0][0]
+        self.right = self.rlist_c[0][0]
 
         self.rlist = self.rlist_a
         self.count_list = self.count_list_a
@@ -720,9 +733,9 @@ class pyramid(Frame):
         total_cnt = 0
         for ridx in range(0, self.rcnt):
             cnt = 0
-            nlist = self.rlist[ridx]
-            for cidx in range(0, len(nlist)):
-                node = nlist[cidx]
+            clist = self.rlist[ridx]
+            for cidx in range(0, len(clist)):
+                node = clist[cidx]
                 node.xleft = center_x - self.length - (self.half_length * (ridx + 1)) + (self.half_length * cidx)
                 node.ybottom = (ridx + 2) * self.altitude
                 node.xright = node.xleft + self.length
@@ -806,11 +819,11 @@ class pyramid(Frame):
                 next_count_list = self.count_list_a
 
             for ridx in range(0, len(next_list)):
-                nlist = next_list[len(next_list) - ridx - 1]
+                clist = next_list[len(next_list) - ridx - 1]
                 cnt = 0
                 this_one = False
-                for cidx in range(0, len(nlist)):
-                    node = nlist[cidx]
+                for cidx in range(0, len(clist)):
+                    node = clist[cidx]
                     if (node == self.cursor):
                         this_one = True
                     if (node.answer): cnt += 1
@@ -843,13 +856,13 @@ class pyramid(Frame):
         self.new()
         for ridx in range(0, self.rcnt):
             line = data[ridx]
-            nlist = line.split()
-            ccnt = len(nlist)
+            clist = line.split()
+            ccnt = len(clist)
             for cidx in range(ccnt):
                 node = self.rlist[ridx][cidx]
-                if (nlist[cidx][:1] == 'X'): node.answer = True
-                if (nlist[cidx][-1:] == 'f'): node.state = state.filled
-                if (nlist[cidx][-1:] == '!'): node.state = state.frozen
+                if (clist[cidx][:1] == 'X'): node.answer = True
+                if (clist[cidx][-1:] == 'f'): node.state = state.filled
+                if (clist[cidx][-1:] == '!'): node.state = state.frozen
         cmd.play_mode = True
         cmd.reset()
         self.draw()
@@ -880,24 +893,24 @@ class pyramid(Frame):
 
     # winner, winner
     def chicken_dinner(self):
-        ## the entire pyramid
-        #for i in range(0, 6):
-        #    color = random_color()
-        #    self.canvas.itemconfig("all", fill=color)
-        #    self.canvas.update_idletasks()
-        #    self.canvas.after(100)
+        # the entire pyramid
+        for i in range(0, 3):
+            color = random_color()
+            self.canvas.itemconfig("all", fill=color)
+            self.canvas.update_idletasks()
+            self.canvas.after(100)
 
-        ## the up and down triangles
-        #for i in range(0, 6):
-        #    for j in range(0, 2):
-        #        color = random_color()
-        #        if (j == 0): self.canvas.itemconfig("up", fill=color)
-        #        elif (j == 1): self.canvas.itemconfig("down", fill=color)
-        #        self.canvas.update_idletasks()
-        #        self.canvas.after(100)
+        # the up and down triangles
+        for i in range(0, 3):
+            for j in range(0, 4):
+                c = random_color()
+                if j < 2: self.canvas.itemconfig("up", fill=c)
+                else: self.canvas.itemconfig("down", fill=c)
+                self.canvas.update_idletasks()
+                self.canvas.after(100)
 
         # twinkles
-        for i in range(0, 20):
+        for i in range(0, 0):
             for j in range(0, triangle.next_id//3):
                 color = random_color()
                 mytags = "id"
@@ -907,16 +920,23 @@ class pyramid(Frame):
             self.canvas.after(10)
 
         # row wipes
+        atags = "arow"
+        btags = "brow"
+        ctags = "crow"
         for i in range(0, 3):
-            if i == 0: mytags = "arow"
-            elif i == 1: mytags = "brow"
-            elif i == 2: mytags = "crow"
-            for j in range(0, 2):
-                for k in range(0, self.rcnt):
-                    self.canvas.itemconfig(mytags + str(k), fill=random_color())
-                    self.canvas.itemconfig(mytags + str(self.rcnt-k+1), fill=random_color())
-                    self.canvas.update_idletasks()
-                    self.canvas.after(10)
+            r, g, b = random_rgb()
+            c1 = make_color(r, g, b)
+            r, g, b = new_color(r, g, b)
+            c2 = make_color(r, g, b)
+            r, g, b = new_color(r, g, b)
+            c3 = make_color(r, g, b)
+            for k in range(0, self.rcnt):
+                self.canvas.itemconfig(atags + str(k), fill=c1)
+                self.canvas.itemconfig(btags + str(k), fill=c2)
+                self.canvas.itemconfig(ctags + str(k), fill=c3)
+                #self.canvas.itemconfig(atags + str(self.rcnt-k+1), fill=c2a)
+                self.canvas.update_idletasks()
+                self.canvas.after(50)
         self.draw()
 
 root = Tk()
