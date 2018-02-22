@@ -2,18 +2,16 @@
 # a logic puzzle by Mark Silverman
 # 2018/01/21
 
-# todo
-# o improve auto-solve
-
 from triangle import *
 from tkinter import *
 from tkinter import filedialog
-import math
 import random
 
+sqrt3 = 1.732
 canvas_width = 900
 canvas_height = 800
 center_x = canvas_width // 2
+default_length = 40
 
 def random_color():
     return "#" + format(int(random.randint(0, 0xFFFFFF)), '06x')
@@ -84,7 +82,7 @@ class pyramid(Frame):
 
     def find_family(self, rlist, nlist, ridx, nidx):
         p = c = l = r = ll = lp = lc = rr = rp = rc = None
-        # parents
+        #parents
         if ridx-1 >= 0:
             if nidx-1 >= 0 and nidx-1 < len(rlist[ridx-1]): p  = rlist[ridx-1][nidx-1]
             if nidx-2 >= 0 and nidx-2 < len(rlist[ridx-1]): lp = rlist[ridx-1][nidx-2]
@@ -416,25 +414,29 @@ class pyramid(Frame):
             self.cursor.freeze()
         self.draw()
 
+    def undo(self):
+        cmd.undo()
+        self.draw()
+
+    def redo(self):
+        cmd.redo()
+        self.draw()
+
     def key(self, event):
         k = repr(event.keysym)
         # print(k)
-        if (k == "'z'"): cmd.undo()
-        if (k == "'x'"): cmd.redo()
-        if (k == "'r'"):
-            self.rotate()
-            return
-        if (k == "'F1'"): self.solve()
+        if (k == "'z'"): return self.undo()
+        if (k == "'x'"): return self.redo()
+        if (k == "'r'"): return self.rotate()
+        if (k == "'F1'"):
+            if cmd.play_mode:
+                self.solve()
         if (k == "'q'"): self.quit()
         if (k == "'n'"): self.new()
         if (k == "'o'"): self.open()
         if (k == "'c'"): self.clear()
         if (k == "'s'"): self.save()
         if (k == "'p'"): self.play()
-        if (k == "'l'"):
-            msg = "triangulation"
-            for i in range(0, len(msg)):
-                self.scroll(msg[i:i+1])
         if (k == "'h'"): self.hide = not self.hide
         if (k == "'equal'" or k == "'plus'"): self.more_rows()
         if (k == "'minus'" or k == "'underscore'"): self.fewer_rows()
@@ -495,10 +497,10 @@ class pyramid(Frame):
 
     def more_rows(self):
         self.rcnt += 1
-        if (self.rcnt == 15):
-            self.length -= 5
+        if (self.rcnt >= 15):
+            self.length -= self.rcnt - 15
             self.half_length = self.length // 2
-            self.altitude = self.length * math.sqrt(3) / 2.0
+            self.altitude = self.length * sqrt3 / 2.0
         self.tv_rows.set(str(self.rcnt))
         self.new()
 
@@ -506,9 +508,9 @@ class pyramid(Frame):
         if (self.rcnt < 3): return
         self.rcnt -= 1
         if (self.rcnt == 15):
-            self.length += 5
+            self.length = default_length
             self.half_length = self.length // 2
-            self.altitude = self.length * math.sqrt(3) / 2.0
+            self.altitude = self.length * sqrt3 / 2.0
         self.tv_rows.set(str(self.rcnt))
         self.new()
 
@@ -522,7 +524,7 @@ class pyramid(Frame):
         self.row_label = Label(self)
         self.row_label["text"] = "rows:"
         self.row_label.pack({"side": "left"})
-        self.rcnt = 4
+        self.rcnt = 14
         self.tv_rows = StringVar()
         self.tv_rows.set(str(self.rcnt))
         self.row_count = Label(self)
@@ -533,13 +535,13 @@ class pyramid(Frame):
         self.add_row["command"] = self.more_rows
         self.add_row.pack({"side": "left"})
 
-        self.undo = Button(self, text="undo")
-        self.undo["command"] = cmd.undo
-        self.undo.pack({"side": "left"})
+        self.undo_button = Button(self, text="undo")
+        self.undo_button["command"] = self.undo
+        self.undo_button.pack({"side": "left"})
 
-        self.redo = Button(self, text="redo")
-        self.redo["command"] = cmd.redo
-        self.redo.pack({"side": "left"})
+        self.redo_button = Button(self, text="redo")
+        self.redo_button["command"] = self.redo
+        self.redo_button.pack({"side": "left"})
 
         self.new_button = Button(self, text="new")
         self.new_button["command"] = self.new
@@ -600,20 +602,21 @@ class pyramid(Frame):
         self.rlist = None
         self.ridx = 0
         self.cidx = 0
-        self.length = 40
+        self.length = default_length
         self.half_length = self.length // 2
-        self.altitude = self.length * math.sqrt(3) / 2.0
+        self.altitude = self.length * sqrt3 / 2.0
         self.new()
 
     def play(self):
         if (cmd.play_mode == False):
-            self.play_button.config(text="design")
             cmd.play_mode = True
+            self.play_button.config(text="play mode")
             self.clear()
+            cmd.reset()
         else:
             self.refill()
             cmd.play_mode = False
-            self.play_button.config(text="play")
+            self.play_button.config(text="design mode")
         self.draw()
 
     # create a new pyramid
@@ -621,8 +624,14 @@ class pyramid(Frame):
         if self.rcnt == 0: return
         triangle.next_id = 0
         self.winner = False
-        cmd.play_mode = False
         self.hide = False
+        # we maintain three arrays of rows
+        # one starting on each corner (a, b, and c)
+        # this makes rotation easier
+        #
+        # we fill all three arrays at the same time
+        # which requires some juggling of indices
+        #
         self.rlist_a = [None for x in range(self.rcnt)]
         self.rlist_b = [None for x in range(self.rcnt)]
         self.rlist_c = [None for x in range(self.rcnt)]
@@ -647,6 +656,12 @@ class pyramid(Frame):
                 if (a_ridx == 0 and a_cidx == 0):
                     self.cursor = self.top = node
 
+                node.a_ridx = a_ridx
+                node.a_cidx = a_cidx
+                node.b_ridx = b_ridx
+                node.b_cidx = b_cidx
+                node.c_ridx = c_ridx
+                node.c_cidx = c_cidx
                 self.rlist_a[a_ridx][a_cidx] = node
                 self.rlist_b[b_ridx][b_cidx] = node
                 self.rlist_c[c_ridx][c_cidx] = node
@@ -704,8 +719,7 @@ class pyramid(Frame):
         
         total_cnt = 0
         for ridx in range(0, self.rcnt):
-            cnt = left_col_idx = alt_left_col_idx = 0
-            right_col_idx = alt_right_col_idx = ridx
+            cnt = 0
             nlist = self.rlist[ridx]
             for cidx in range(0, len(nlist)):
                 node = nlist[cidx]
@@ -728,9 +742,7 @@ class pyramid(Frame):
                     cnt += 1
                     total_cnt += 1
 
-                if (cmd.play_mode == True and
-                    (node.answer == True and node.state != state.filled) or
-                    (node.answer == False and node.state == state.filled)):
+                if (cmd.play_mode == True and (node.answer == True and node.state != state.filled) or (node.answer == False and node.state == state.filled)):
                     self.winner = False
 
                 color = "ivory"
@@ -742,26 +754,23 @@ class pyramid(Frame):
                 if (self.hide == True): color = "white"
 
                 mytags = ["all"]
-                mytags.append(str("triangle") + str(node.id))
-                mytags.append(str("row") + str(ridx))
-                mytags.append(str("left_col") + str(left_col_idx))
-                mytags.append(str("right_col") + str(right_col_idx))
-                mytags.append(str("alt_left_col") + str(alt_left_col_idx))
-                mytags.append(str("alt_right_col") + str(alt_right_col_idx))
+                mytags.append(str("id") + str(node.id))
+                mytags.append(str("arow") + str(node.a_ridx))
+                mytags.append(str("acol") + str(node.a_cidx))
+                mytags.append(str("brow") + str(node.b_ridx))
+                mytags.append(str("bcol") + str(node.b_cidx))
+                mytags.append(str("crow") + str(node.c_ridx))
+                mytags.append(str("ccol") + str(node.c_cidx))
 
-                self.canvas.tag_bind(str("triangle") + str(node.id), "<Button-1>", lambda event, n=node: self.left_click(event, n))
-                self.canvas.tag_bind(str("triangle") + str(node.id), "<Button-3>", lambda event, n=node: self.right_click(event, n))
+                self.canvas.tag_bind(str("id") + str(node.id), "<Button-1>", lambda event, n=node: self.left_click(event, n))
+                self.canvas.tag_bind(str("id") + str(node.id), "<Button-3>", lambda event, n=node: self.right_click(event, n))
             
                 if (node.direction == dir.UP):
                     node.xy = ((node.xleft, node.ybottom), (node.xright, node.ybottom), (node.xmiddle, node.ytop))
-                    mytags.append("uptriangle")
-                    right_col_idx -= 1
-                    alt_left_col_idx += 1
+                    mytags.append("up")
                 else:
                     node.xy = ((node.xleft, node.ytop), (node.xright, node.ytop), (node.xmiddle, node.ybottom))
-                    mytags.append("downtriangle")
-                    left_col_idx += 1
-                    alt_right_col_idx -= 1
+                    mytags.append("down")
                 node.draw(self.canvas, color, mytags)
 
             color = "black"
@@ -778,71 +787,47 @@ class pyramid(Frame):
             self.cursor.outline(self.canvas)
 
         # winner?
-        if (already_won == False and cmd.play_mode and self.winner == True):
+        if (total_cnt and already_won == False and cmd.play_mode and self.winner):
             self.canvas.delete("text")
             self.chicken_dinner()
             return
 
-        # calculate totals on the right
-        if (self.rlist == self.rlist_a):
-            next_list = self.rlist_b
-            next_count_list = self.count_list_b
-        elif (self.rlist == self.rlist_b):
-            next_list = self.rlist_c
-            next_count_list = self.count_list_c
-        else:
-            next_list = self.rlist_a
-            next_count_list = self.count_list_a
+        # calculate more totals
+        next_list = self.rlist
+        for i in range(0, 2):
+            if (next_list == self.rlist_a):
+                next_list = self.rlist_b
+                next_count_list = self.count_list_b
+            elif (next_list == self.rlist_b):
+                next_list = self.rlist_c
+                next_count_list = self.count_list_c
+            else:
+                next_list = self.rlist_a
+                next_count_list = self.count_list_a
 
-        for ridx in range(0, len(next_list)):
-            nlist = next_list[len(next_list) - ridx - 1]
-            cnt = 0
-            this_one = False
-            for cidx in range(0, len(nlist)):
-                node = nlist[cidx]
-                if (node == self.cursor):
-                    this_one = True
-                if (node.answer): cnt += 1
-                if (node.state == state.filled and cmd.play_mode == True): cnt -= 1
-            color = "black"
-            if (cnt < 0): color = "tomato"
-            elif (cnt == 0): color = "darkgreen"
-            x = center_x - self.length + (self.half_length * (ridx + 1))
-            y =  (ridx + 2) * self.altitude - (self.altitude)
-            if (self.hide == False and this_one):
-                self.canvas.create_oval(x-12, y-12, x+12, y+12, fill='gold')
-            self.canvas.create_text(x, y, fill=color, text=cnt, font="12x24", tags="text")
-            next_count_list[len(next_list) - ridx - 1] = cnt
-
-        # calculate the totals along the bottom
-        if (next_list == self.rlist_a):
-            next_list = self.rlist_b
-            next_count_list = self.count_list_b
-        elif (next_list == self.rlist_b):
-            next_list = self.rlist_c
-            next_count_list = self.count_list_c
-        else:
-            next_list = self.rlist_a
-            next_count_list = self.count_list_a
-        for ridx in range(0, len(next_list)):
-            nlist = next_list[len(next_list) - ridx - 1]
-            cnt = 0
-            this_one = False
-            for cidx in range(0, len(nlist)):
-                node = nlist[len(nlist) - cidx - 1]
-                if (node == self.cursor):
-                    this_one = True
-                if (node.answer): cnt += 1
-                if (node.state == state.filled and cmd.play_mode == True): cnt -= 1
+            for ridx in range(0, len(next_list)):
+                nlist = next_list[len(next_list) - ridx - 1]
+                cnt = 0
+                this_one = False
+                for cidx in range(0, len(nlist)):
+                    node = nlist[cidx]
+                    if (node == self.cursor):
+                        this_one = True
+                    if (node.answer): cnt += 1
+                    if (node.state == state.filled and cmd.play_mode == True): cnt -= 1
                 color = "black"
-            if (cnt < 0): color = "tomato"
-            elif (cnt == 0): color = "darkgreen"
-            x = center_x - (self.half_length/2) + self.rcnt * self.half_length - (self.length * (ridx + 1))
-            y = (self.rcnt + 2) * self.altitude - (self.altitude / 2)
-            if (self.hide == False and this_one):
-                self.canvas.create_oval(x-12, y-12, x+12, y+12, fill='gold')
-            self.canvas.create_text(x, y, fill=color, text=cnt, font="12x24", tags="text")
-            next_count_list[len(next_list) - ridx - 1] = cnt
+                if (cnt < 0): color = "tomato"
+                elif (cnt == 0): color = "darkgreen"
+                if i == 0:
+                    x = center_x - self.length + (self.half_length * (ridx + 1))
+                    y =  (ridx + 2) * self.altitude - (self.altitude)
+                else:
+                    x = center_x - (self.half_length/2) + self.rcnt * self.half_length - (self.length * (ridx + 1))
+                    y = (self.rcnt + 2) * self.altitude - (self.altitude / 2)
+                if (self.hide == False and this_one):
+                    self.canvas.create_oval(x-12, y-12, x+12, y+12, fill='gold')
+                self.canvas.create_text(x, y, fill=color, text=cnt, font="12x24", tags="text")
+                next_count_list[len(next_list) - ridx - 1] = cnt
 
         # arrows
         self.canvas.create_image(center_x - (self.half_length * self.rcnt / 2) - 130, self.rcnt * self.altitude / 2, image=self.right_arrow)
@@ -884,7 +869,7 @@ class pyramid(Frame):
                 node = self.rlist[ridx][cidx]
                 f.write(" ")
                 if (node.answer): f.write("X")
-                if (node.state == state.filled): f.write("f")
+                if (cmd.play_mode == True and node.state == state.filled): f.write("f")
                 elif (node.state == state.frozen): f.write("!")
                 elif (node.state == state.blank): f.write(".")
             if (ridx < self.rcnt - 1): f.write("\n")
@@ -893,148 +878,46 @@ class pyramid(Frame):
         self.dir_name = f.name[:f.name.rfind('/')]
         self.winfo_toplevel().title("Triangulation - " + self.file_name)
 
-    def scroll(self, letter):
-        f = open(letter + ".txt", 'r')
-        if (f == None): return
-        more_rows = 0
-        triangle.next_id = 0
-        start_of_row = None
-        letter_top = None
-        for line in f:
-            more_rows += 1
-            nlist = line.split()
-            ccnt = len(nlist)
-            if (ccnt == 0):
-                break
-            parent_node = start_of_row
-            prev_node = None
-            for cidx in range(ccnt):
-                node = triangle()
-                if (cidx == 0):
-                    start_of_row = node
-                    if (more_rows == 1):
-                        letter_top = node
-                else:
-                    node.left = prev_node
-                    prev_node.right = node
-                    if (cidx < ccnt - 1):
-                        node.parent = parent_node
-                        parent_node.child = node
-                        parent_node = parent_node.right
-                s = nlist[cidx]
-                if (s == 'X'): node.answer = True
-                prev_node = node
-        node = self.top
-        while (node.child): node = node.child
-        while (node.right): node = node.right
-        node = node.left.left
-        if (node.direction != dir.UP): node = node.left
-        while (node):
-            last_node = node
-            self.show(node, letter_top)
-            if (node.parent == None or node.parent.left == None):
-                if (letter_top):
-                    letter_top = letter_top.child
-                    if (letter_top): letter_top = letter_top.right
-                    if (letter_top == None):
-                        break
-            else:
-                node = node.parent.left
-            if (node == None): node = last_node
-            self.canvas.delete("temp")
-            self.canvas.update_idletasks()
-
-    # this function shows letter_node at node
-    def show(self, node, letter_node):
-        center_node = node
-        center_letter = letter_node
-        direction = dir.LEFT
-        last_letter = None
-        while (node and letter_node):
-            if (letter_node != last_letter and letter_node.answer):
-                node.draw(self.canvas, "red", "temp")
-            last_letter = letter_node
-            if (direction == dir.LEFT):
-                if (node.left and letter_node.left):
-                    node = node.left
-                    letter_node = letter_node.left
-                else:
-                    node = center_node
-                    letter_node = center_letter
-                    direction = dir.RIGHT
-            elif (direction == dir.RIGHT):
-                if (node.right and letter_node.right):
-                    node = node.right
-                    letter_node = letter_node.right
-                else:
-                    center_node = node = center_node.child
-                    center_letter = letter_node = center_letter.child
-                    direction = dir.LEFT
-            else:
-                node = None
-                letter_node = None
-        self.canvas.update_idletasks()
-        self.canvas.after(100)
-
     # winner, winner
     def chicken_dinner(self):
-        # if self.auto_solve: return
-
-        # the entire pyramid
-        #for i in range(0, 8):
+        ## the entire pyramid
+        #for i in range(0, 6):
         #    color = random_color()
         #    self.canvas.itemconfig("all", fill=color)
         #    self.canvas.update_idletasks()
         #    self.canvas.after(100)
 
-        # the up and down triangles
+        ## the up and down triangles
         #for i in range(0, 6):
         #    for j in range(0, 2):
         #        color = random_color()
-        #        if (j == 0): self.canvas.itemconfig("uptriangle", fill=color)
-        #        elif (j == 1): self.canvas.itemconfig("downtriangle", fill=color)
+        #        if (j == 0): self.canvas.itemconfig("up", fill=color)
+        #        elif (j == 1): self.canvas.itemconfig("down", fill=color)
         #        self.canvas.update_idletasks()
         #        self.canvas.after(100)
 
         # twinkles
-        for i in range(0, 10):
-            for j in range(0, triangle.next_id//10):
+        for i in range(0, 20):
+            for j in range(0, triangle.next_id//3):
                 color = random_color()
-                mytags = "triangle"
+                mytags = "id"
                 mytags += str(random.randint(0, triangle.next_id))
                 self.canvas.itemconfig(mytags, fill=color)
             self.canvas.update_idletasks()
-            self.canvas.after(50)
-        self.draw()
-        return
-        # random wipes
-        #for j in range(0, self.rcnt):
-        #    for i in range(0, 3):
-        #        if (i == 0): mytags = "row"
-        #        elif (i == 1): mytags = "left_col"
-        #        elif (i == 2): mytags = "right_col"
-        #        color = "#" + format(int(random.randint(0, 0xFFFFFF)), '06x')
-        #        self.canvas.itemconfig(mytags + str(random.randint(0, self.rcnt)), fill=color)
-        #        self.canvas.update_idletasks()
-        #        self.canvas.after(50)
+            self.canvas.after(10)
 
         # row wipes
-        mytags = "row"
-        for i in range(0, self.rcnt):
-            self.canvas.itemconfig(mytags + str(i), fill=random_color())
-            self.canvas.update_idletasks()
-            self.canvas.after(50)
-
-        # column wipes
-        for i in range(0, 4):
-            if (i == 0): mytags = "left_col"
-            elif (i == 1): mytags = "right_col"
-            elif (i == 2): mytags = "alt_left_col"
-            elif (i == 3): mytags = "alt_right_col"
-            for j in range(0, self.rcnt):
-                self.canvas.itemconfig(mytags + str(j), fill=random_color())
-                self.canvas.update_idletasks()
-                self.canvas.after(50)
+        for i in range(0, 3):
+            if i == 0: mytags = "arow"
+            elif i == 1: mytags = "brow"
+            elif i == 2: mytags = "crow"
+            for j in range(0, 2):
+                for k in range(0, self.rcnt):
+                    self.canvas.itemconfig(mytags + str(k), fill=random_color())
+                    self.canvas.itemconfig(mytags + str(self.rcnt-k+1), fill=random_color())
+                    self.canvas.update_idletasks()
+                    self.canvas.after(10)
+        self.draw()
 
 root = Tk()
 app = pyramid(master=root)

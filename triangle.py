@@ -41,7 +41,6 @@ class cmd():
 
     @staticmethod
     def redo():
-        print("redo")
         if (cmd.idx + 1 >= len(cmd.queue)): return
         cmd.idx += 1
         this_cmd = cmd.queue[cmd.idx]
